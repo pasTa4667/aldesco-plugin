@@ -1,0 +1,24 @@
+# ignore .DS_Store files created by macOS
+./aldesco-extension/.DS_Store
+
+# ignore node_modules directory
+./aldesco-extension/node_modules/
+
+# ignore .env files that may contain sensitive information
+./aldesco-extension/.env*
+
+# ignore log files
+./aldesco-extension/*.log
+
+# ignore build output directories
+./aldesco-extension/build/
+./aldesco-extension/dist/
+
+# ignore compiled binary files
+./aldesco-extension/*.exe
+./aldesco-extension/*.dll
+./aldesco-extension/*.so
+./aldesco-extension/*.dylib
+
+# ignore VSCode-specific files
+./aldesco-extension/vscode/
