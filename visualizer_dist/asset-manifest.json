@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.js": "/js/main.47f33791.js",
+    "ShareTechMono-Regular.ttf": "/d753b5dc50d171ecc94b.ttf",
+    "favicon.png": "/favicon.png",
+    "index.html": "/index.html",
+    "visualizerConfig.json": "/visualizerConfig.json",
+    "main.47f33791.js.map": "/js/main.47f33791.js.map"
+  },
+  "entrypoints": {
+    "main": [
+      "js/main.47f33791.js"
+    ]
+  }
+}

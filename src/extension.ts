@@ -61,7 +61,7 @@ class ReactPanel {
 
 			// And restric the webview to only loading content from our extension's `media` directory.
 			localResourceRoots: [
-				vscode.Uri.file(path.join(this._extensionPath, 'build'))
+				vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist'))
 			]
 		});
 		
@@ -103,12 +103,12 @@ class ReactPanel {
 	}
 
 	private _getHtmlForWebview() {
-		const manifest = require(path.join(this._extensionPath, 'build', 'asset-manifest.json'));
+		const manifest = require(path.join(this._extensionPath, 'visualizer_dist', 'asset-manifest.json'));
 		const mainScript = manifest['files']['main.js'];
 		const icon = manifest['files']['favicon.png'];
 
-		const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'build', mainScript));
-		const iconPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'build', icon));
+		const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist', mainScript));
+		const iconPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist', icon));
 
 		const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
 		const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);
