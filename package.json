@@ -17,7 +17,16 @@
         "command": "aldesco-extension.visualizer",
         "title": "Visualizer"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "aldesco-extension.openVisWithJson",
+          "when": "resourceLangId == json || resourceFilename =~ /\\-vis.json-[0-9][0-9]*$/",
+          "group": "navigation" 
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
