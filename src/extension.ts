@@ -27,54 +27,62 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	//opens Visualizer with json (right click on json file)
-	let disposableVisWithJson = vscode.commands.registerCommand('aldesco-extension.openVisWithJson', (fileUri: vscode.Uri) => {
+	let disposableVisWithJson = vscode.commands.registerCommand('aldesco-extension.rightClickLogFile', (fileUri: vscode.Uri) => {
 		basename = path.posix.basename(fileUri.path);
 		fileContent = fs.readFileSync(fileUri.fsPath, 'utf8');
 
 		reactPanel = ReactPanel.createOrShow(context.extensionPath);
 
-		if(reactPanel && basename && fileContent){
+		if (reactPanel && basename && fileContent) {
 			console.log('opening json');
-			reactPanel.sendMessage('VSCtest', {name: basename, content: fileContent});
+			reactPanel.sendMessage('VSCtest', { name: basename, content: fileContent });
 		}
 	});
 
-	//connect to visualizer via url (locally start visualizer first)
+	//connect to visualizer via url (locally start visualizer first) (mainly for easier debugging)
 	let disposableVisLH = vscode.commands.registerCommand('aldesco-extension.connectToVisLH', () => {
 		reactPanel = ReactPanel.createOrShowLH(context.extensionPath);
 	});
 
 
-	//open json file in Visualizer (if open)
+	//open json file in Visualizer
 	let disposabelOpenJsonInVis = vscode.commands.registerCommand('aldesco-extension.openJsonInVis', () => {
 
-		vscode.window.showOpenDialog({
-			canSelectFiles: true,
-			canSelectFolders: false,
-			canSelectMany: false,
-			filters: {
-			  'JsonFiles': ['json', '\\json(-\d+)?$'],
-			  'AllFiles': ['*']
-			}
-		  }).then(fileUris => {
-			if (fileUris && fileUris[0]) {
-			  const fileUri = fileUris[0];
-		
-			  // Read the content of the selected JSON file
-			  vscode.workspace.fs.readFile(fileUri).then(content => {
+		const activeEditor = vscode.window.activeTextEditor;
+
+		if (!activeEditor || !activeEditor.document.fileName.includes('vis')) {
+			//TODO: only be able to select log files
+			vscode.window.showOpenDialog({
+				canSelectFiles: true,
+				canSelectFolders: false,
+				canSelectMany: false,
+				filters: {
+					'AllFiles': ['*']
+				}
+			}).then(fileUris => {
+				if (fileUris && fileUris[0]) {
+					const fileUri = fileUris[0];
+
+					// Read the content of the selected JSON file
+					vscode.workspace.fs.readFile(fileUri).then(content => {
+						const jsonContent = content.toString();
+
+						reactPanel = ReactPanel.createOrShow(context.extensionPath);
+						// Pass the file name and content to the webview
+						reactPanel.sendMessage('VSCtest', { name: fileUri.fsPath, content: jsonContent });
+					});
+				}
+			});
+		} else {
+			const fileUri = activeEditor.document.uri;
+			vscode.workspace.fs.readFile(fileUri).then(content => {
 				const jsonContent = content.toString();
-				
+
 				reactPanel = ReactPanel.createOrShow(context.extensionPath);
 				// Pass the file name and content to the webview
 				reactPanel.sendMessage('VSCtest', { name: fileUri.fsPath, content: jsonContent });
-			  });
-			}
-		  });
-
-		// if(reactPanel && basename && fileContent){
-		// 	console.log('message send');
-		// 	reactPanel.sendMessage('VSCtest', {name: basename, content: fileContent});
-		// }
+			});
+		}
 	});
 
 	context.subscriptions.push(disposableVisLH);
@@ -84,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
 
 function getNonce() {
 	let text = "";

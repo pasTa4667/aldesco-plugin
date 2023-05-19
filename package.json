@@ -15,27 +15,27 @@
     "commands": [
       {
         "command": "aldesco-extension.visualizer",
-        "title": "Visualizer"
+        "title": "Visualizer: Open Visualizer"
       },
       {
-        "command":"aldesco-extension.openVisWithJson",
-        "title": "Open in Visualizer"
+        "command": "aldesco-extension.rightClickLogFile",
+        "title": "Visualizer: Open in Visualizer"
       },
       {
         "command": "aldesco-extension.openJsonInVis",
-        "title": "Open Json in Visualizer"
+        "title": "Visualizer: Open Log File in Visualizer"
       },
       {
         "command": "aldesco-extension.connectToVisLH",
-        "title": "Connect to localhost Visualizer"
+        "title": "Visualizer: Connect to localhost (debugging)"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "aldesco-extension.openVisWithJson",
+          "command": "aldesco-extension.rightClickLogFile",
           "when": "resourceLangId == json || resourceFilename =~ /\\.json-[0-9][0-9]*$/",
-          "group": "navigation" 
+          "group": "navigation"
         }
       ]
     }
