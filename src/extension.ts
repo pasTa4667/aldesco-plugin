@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (reactPanel && basename && fileContent) {
 			console.log('opening json');
-			reactPanel.sendMessage('VSCtest', { name: basename, content: fileContent });
+			reactPanel.sendMessage('VSC:OpenFile', { name: basename, content: fileContent });
 		}
 	});
 
@@ -69,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 						reactPanel = ReactPanel.createOrShow(context.extensionPath);
 						// Pass the file name and content to the webview
-						reactPanel.sendMessage('VSCtest', { name: fileUri.fsPath, content: jsonContent });
+						reactPanel.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent });
 					});
 				}
 			});
@@ -80,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 				reactPanel = ReactPanel.createOrShow(context.extensionPath);
 				// Pass the file name and content to the webview
-				reactPanel.sendMessage('VSCtest', { name: fileUri.fsPath, content: jsonContent });
+				reactPanel.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent });
 			});
 		}
 	});
