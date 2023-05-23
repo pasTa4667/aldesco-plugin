@@ -5,7 +5,7 @@ import * as path from 'path';
  */
 export default class ReactPanel {
 	/**
-	 * Track the currently panel. Only allow a single panel to exist at a time.
+	 * Track the current panel. Only allow a single panel to exist at a time.
 	 */
 	public static currentPanel: ReactPanel | undefined;
 
@@ -53,7 +53,7 @@ export default class ReactPanel {
 
 			// And restric the webview to only loading content from our visualizer build folder
 			// localResourceRoots: [
-			// 	vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist'))
+			// 	vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist'))
 			// ]
 		});
 
