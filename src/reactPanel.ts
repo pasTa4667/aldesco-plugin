@@ -17,7 +17,7 @@ export default class ReactPanel {
 
 	public static createOrShow(extensionPath: string): ReactPanel {
 		const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
-        
+
 		// If we already have a panel, show it.
 		// Otherwise, create a new panel.
 		if (ReactPanel.currentPanel) {
@@ -29,7 +29,7 @@ export default class ReactPanel {
 		}
 	}
 
-	public static createOrShowLH(extensionPath: string): ReactPanel{
+	public static createOrShowLH(extensionPath: string): ReactPanel {
 		const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
 		// If we already have a panel, show it.
@@ -56,7 +56,7 @@ export default class ReactPanel {
 			// 	vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist'))
 			// ]
 		});
-		
+
 		// Set the webview's initial html content 
 		lh ? this._panel.webview.html = this._getHtmlForWebviewLH() : this._panel.webview.html = this._getHtmlForWebview();
 
@@ -74,15 +74,15 @@ export default class ReactPanel {
 				case 'VSCtest':
 					console.log('right message received in vsc', message.message);
 					return;
-				default: 
+				default:
 					console.log('wrong received in vsc');
 					return;
 			}
 		}, null, this._disposables);
 	}
 
-	public sendMessage(type: string, message: any){
-		this._panel.webview.postMessage({type: type, message: message});
+	public sendMessage(type: string, message: any) {
+		this._panel.webview.postMessage({ type: type, message: message });
 	}
 
 	public dispose() {
@@ -100,12 +100,12 @@ export default class ReactPanel {
 	}
 
 	private _getHtmlForWebview() {
-		const manifest = require(path.join(this._extensionPath, 'visualizer_dist', 'asset-manifest.json'));
+		const manifest = require(path.join(this._extensionPath, 'visualizer', 'dist', 'asset-manifest.json'));
 		const mainScript = manifest['files']['main.js'];
 		const icon = manifest['files']['favicon.png'];
 
-		const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist', mainScript));
-		const iconPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer_dist', icon));
+		const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist', mainScript));
+		const iconPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist', icon));
 
 		const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
 		const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);
