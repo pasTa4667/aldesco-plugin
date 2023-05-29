@@ -15,30 +15,103 @@
     "commands": [
       {
         "command": "aldesco-extension.visualizer",
-        "title": "Visualizer: Open Visualizer"
+        "title": "Open Visualizer",
+        "category": "Visualizer"
       },
       {
         "command": "aldesco-extension.rightClickLogFile",
-        "title": "Visualizer: Open in Visualizer"
+        "title": "Open in Visualizer",
+        "category": "Visualizer"
       },
       {
         "command": "aldesco-extension.openJsonInVis",
-        "title": "Visualizer: Open Log File in Visualizer"
+        "title": "Open Log File in Visualizer",
+        "category": "Visualizer"
       },
       {
         "command": "aldesco-extension.connectToVisLH",
-        "title": "Visualizer: Connect to localhost (debugging)"
+        "title": "Connect to localhost (debugging)",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.duplicateVis",
+        "title": "Duplicate",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.sendMessage",
+        "title": "Send Message",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.openAST",
+        "title": "Open AST",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.openPattern",
+        "title": "Open Pattern",
+        "category": "Visualizer"
       }
     ],
     "menus": {
-      "explorer/context": [
+      "commandPalette": [
+        {
+          "command": "aldesco-extension.openAST",
+          "title": "Open AST",
+          "category": "Visualizer",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.openPattern",
+          "title": "Open Pattern",
+          "category": "Visualizer",
+          "when": "false"
+        },
         {
           "command": "aldesco-extension.rightClickLogFile",
-          "when": "resourceLangId == json || resourceFilename =~ /\\.json-[0-9][0-9]*$/",
+          "title": "Open in Visualizer",
+          "category": "Visualizer",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.duplicateVis",
+          "title": "Duplicate",
+          "category": "Visualizer",
+          "when": "reactPanel"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "aldesco-extension.rightClickLogFile",
+          "when": "resourceFilename =~ /\\-vis/",
           "group": "navigation"
         }
+      ],
+      "aldesco-extension.rightClickLogFile": [
+        {
+          "command": "aldesco-extension.openAST",
+          "category": "Visualizer",
+          "group": "aldesco-extension.rightClickLogFile@1"
+        },
+        {
+          "command": "aldesco-extension.openPattern",
+          "category": "Visualizer",
+          "group": "aldesco-extension.rightClickLogFile@2"
+        },
+        {
+          "command": "aldesco-extension.rightClickLogFile",
+          "category": "Visualizer",
+          "group": "aldesco-extension.rightClickLogFile@3"
+        }
       ]
-    }
+    },
+    "submenus": [
+      {
+        "id": "aldesco-extension.rightClickLogFile",
+        "label": "Open in Visualizer"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
