@@ -52,6 +52,16 @@
         "command": "aldesco-extension.openPattern",
         "title": "Open Pattern",
         "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.startPrototype",
+        "title": "Start Prototype",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.selectOutputLocation",
+        "title": "Select Output Location",
+        "category": "Extension"
       }
     ],
     "menus": {
@@ -79,6 +89,12 @@
           "title": "Duplicate",
           "category": "Visualizer",
           "when": "reactPanel"
+        },
+        {
+          "command": "aldesco-extension.selectOutputLocation",
+          "title": "Select Output Location",
+          "category": "Extension",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -111,7 +127,35 @@
         "id": "aldesco-extension.rightClickLogFile",
         "label": "Open in Visualizer"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "AlDeSCo",
+      "properties": {
+        "aldesco-extension.visualizer.enableDarkMode": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Enables Dark Mode in the Visualizer Webview."
+        },
+        "aldesco-extension.prototype.outputLocation": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of Prototype Output file."
+        },
+        "aldesco-extension.prototype.inputLocation": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of Prototype Output file."
+        },
+        "aldesco-extension.prototype.chainLocation": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of Prototype Output file."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
