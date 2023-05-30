@@ -1,0 +1,15 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* Light Mode Styles */
+.light-mode {
+    background-color: rgb(54, 255, 255);
+    color: darkviolet;
+}
+
+/* Dark Mode Styles */
+.dark-mode {
+    background-color: rgb(77, 0, 0);
+    color: pink;
+}

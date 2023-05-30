@@ -18,7 +18,7 @@ export default class ReactPanel {
 	private static readonly viewType = 'visualizer';
 	private static _panels: WebviewData[] = [];
 	private static _idStart = 1;
-	private static group = 1;
+	private static _group = 1;
 
 	//to keep track of the last used webview
 	private static _activePanel: WebviewData = { panel: undefined, id: 0 };
@@ -26,6 +26,7 @@ export default class ReactPanel {
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionPath: string;
 	private _disposables: vscode.Disposable[] = [];
+	private readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
 
 
 	public static createOrShow(extensionPath: string): ReactPanel {
@@ -62,7 +63,7 @@ export default class ReactPanel {
 		if (ReactPanel._activePanel) {
 
 			if (!ReactPanel._activePanel.group) {
-				ReactPanel._activePanel.group = ReactPanel.group++;
+				ReactPanel._activePanel.group = ReactPanel._group++;
 			}
 
 			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, false, ReactPanel._activePanel.group);
@@ -186,26 +187,25 @@ export default class ReactPanel {
 		const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist', mainScript));
 		const iconPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist', icon));
 
+		const cssPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'src', 'media', 'webview.css'));
+
+		const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
 		const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
 		const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);
 
-		const nonce = this.getNonce();
+		const enableDarkMode = this._configuration.get('visualizer.enableDarkMode');
+		const colorScheme = enableDarkMode ? 'dark-mode' : 'light-mode';
+		console.log(colorScheme);
 
 		return `<!doctype html>
 		<html>
 		<head>
 		<meta charset="utf-8"><title>AST Prototype Visualizer</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="${iconUri}">
 		<meta http-equiv="Content-Security-Policy" content="default-src *; script-src 'unsafe-inline' 'unsafe-eval' *; style-src 'unsafe-inline' *; img-src *; font-src * data:">
+		<link rel="stylesheet" href=${cssUri}>
 		<script defer="defer" src="${scriptUri}"></script>
-		<style>
-    		.webview-body 
-			{
-				color: darkviolet;
-				background: aqua;
-    		}
- 		</style>
 		</head>
-		<body class="webview-body"></body>
+		<body class=${colorScheme}></body>
 		</html>`;
 	}
 
@@ -231,14 +231,5 @@ export default class ReactPanel {
 			<iframe src="http://localhost:8080" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
 		</body>
 		</html>`;
-	}
-
-	private getNonce() {
-		let text = "";
-		const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-		for (let i = 0; i < 32; i++) {
-			text += possible.charAt(Math.floor(Math.random() * possible.length));
-		}
-		return text;
 	}
 }
