@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import ReactPanel from './reactPanel';
+import Prototype from './prototype';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -38,7 +39,11 @@ export function activate(context: vscode.ExtensionContext) {
 			reactPanel = ReactPanel.createOrShow(context.extensionPath);
 
 			if (reactPanel && basename && fileContent) {
-				reactPanel.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree ? tree : '/' });
+				if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
+					tree = '/';
+				}
+				console.log(tree);
+				reactPanel.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
 			}
 			updateReactPanel(reactPanel);
 		})
@@ -125,7 +130,16 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.startPrototype', () => {
+			const prototype = new Prototype(context.extensionPath);
+			prototype.execute();
+		})
+	);
+
 }
+
+
 function updateReactPanel(reactPanel: ReactPanel | undefined) {
 	vscode.commands.executeCommand('setContext', 'reactPanel', reactPanel);
 }
