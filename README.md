@@ -1,8 +1,9 @@
 How to work with this extension:
 
 1. after cloning run <npm i>
-2. press F5 select VS Extension Developement (preview)
-3. In the new vsc window: press cntrl + shift + p or open vsc command window and type visualizer
+2. change to the visualizer directory and run <npm run build> 
+3. press F5 select VS Extension Developement (preview)
+4. In the new vsc window: press cntrl + shift + p or open vsc command window and type visualizer
 
 # aldesco-extension README
 
