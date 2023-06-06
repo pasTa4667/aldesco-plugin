@@ -29,7 +29,7 @@ export default class ReactPanel {
 	private readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
 
 
-	public static createOrShow(extensionPath: string): ReactPanel {
+	public static createOrShow(extensionPath: string, fileName?: string): ReactPanel {
 		const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
 		// If we already have a panel, show it.
@@ -38,7 +38,7 @@ export default class ReactPanel {
 			ReactPanel.currentReactPanel._panel.reveal(column);
 			return ReactPanel.currentReactPanel;
 		} else {
-			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One);
+			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');
 			return ReactPanel.currentReactPanel;
 		}
 	}
@@ -52,7 +52,7 @@ export default class ReactPanel {
 			ReactPanel.currentReactPanel._panel.reveal(column);
 			return ReactPanel.currentReactPanel;
 		} else {
-			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, true);
+			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, undefined, undefined, true);
 			return ReactPanel.currentReactPanel;
 		}
 	}
@@ -66,20 +66,20 @@ export default class ReactPanel {
 				ReactPanel._activePanel.group = ReactPanel._group++;
 			}
 
-			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, false, ReactPanel._activePanel.group);
+			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, ReactPanel._activePanel.group);
 			return ReactPanel.currentReactPanel;
 		}
 
 		return;
 	}
 
-	private constructor(extensionPath: string, column: vscode.ViewColumn, lh?: boolean, group?: number) {
+	private constructor(extensionPath: string, column: vscode.ViewColumn, group?: number, fileName?: string, lh?: boolean) {
 		this._extensionPath = extensionPath;
 		const idGenerator = this.idGenerator();
 		const id = idGenerator.next().value;
 
 		// Create and show a new webview panel
-		this._panel = vscode.window.createWebviewPanel(ReactPanel.viewType, "Visualizer " + id, column, {
+		this._panel = vscode.window.createWebviewPanel(ReactPanel.viewType, fileName ? fileName : 'Visualizer ' + id, column, {
 			// Enable javascript in the webview
 			enableScripts: true,
 			// To stop the webview from closing, when not active
@@ -159,6 +159,15 @@ export default class ReactPanel {
 		})
 	}
 
+	public changeTitle(newTitle: string) {
+		const senderGroup = ReactPanel._activePanel.group;
+		ReactPanel._panels.forEach((wvdata) => {
+			if (wvdata.group === senderGroup && newTitle && wvdata.panel) {
+				wvdata.panel!.title = newTitle;
+			}
+		})
+	}
+
 	public dispose() {
 		ReactPanel.currentReactPanel = undefined;
 
@@ -195,7 +204,6 @@ export default class ReactPanel {
 
 		const enableDarkMode = this._configuration.get('visualizer.enableDarkMode');
 		const colorScheme = enableDarkMode ? 'dark-mode' : 'light-mode';
-		console.log(colorScheme);
 
 		return `<!doctype html>
 		<html>
