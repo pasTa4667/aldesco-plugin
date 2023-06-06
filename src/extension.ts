@@ -17,12 +17,12 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-
+	const configuration = vscode.workspace.getConfiguration('aldesco-extension');
 	let reactPanel: ReactPanel | undefined;
 	let basename: string;
 	let fileContent: string;
 
-	//Opens Visualizer without json
+	//Opens Visualizer without log File
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.visualizer', () => {
 			reactPanel = ReactPanel.createOrShow(context.extensionPath);
@@ -30,13 +30,13 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	//opens Visualizer with json (right click on json file)
+	//opens Visualizer with log file (right click on json file)
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.rightClickLogFile', (fileUri: vscode.Uri, tree?: string) => {
 			basename = path.posix.basename(fileUri.path);
 			fileContent = fs.readFileSync(fileUri.fsPath, 'utf8').toString();
 
-			reactPanel = ReactPanel.createOrShow(context.extensionPath);
+			reactPanel = ReactPanel.createOrShow(context.extensionPath, basename);
 
 			if (reactPanel && basename && fileContent) {
 				if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
@@ -49,9 +49,9 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	//open json file in Visualizer
+	//open Log file in Visualizer
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.openJsonInVis', () => {
+		vscode.commands.registerCommand('aldesco-extension.openLogFileInVis', () => {
 			const activeEditor = vscode.window.activeTextEditor;
 
 			if (!activeEditor || !activeEditor.document.fileName.includes('vis')) {
@@ -66,26 +66,12 @@ export function activate(context: vscode.ExtensionContext) {
 				}).then(fileUris => {
 					if (fileUris && fileUris[0]) {
 						const fileUri = fileUris[0];
-
-						// Read the content of the selected JSON file
-						vscode.workspace.fs.readFile(fileUri).then(content => {
-							const jsonContent = content.toString();
-
-							reactPanel = ReactPanel.createOrShow(context.extensionPath);
-							// Pass the file name and content to the webview
-							reactPanel.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent });
-						});
+						readFileOpenVis(reactPanel, fileUri, context.extensionPath);
 					}
 				});
 			} else {
 				const fileUri = activeEditor.document.uri;
-				vscode.workspace.fs.readFile(fileUri).then(content => {
-					const jsonContent = content.toString();
-
-					reactPanel = ReactPanel.createOrShow(context.extensionPath);
-					// Pass the file name and content to the webview
-					reactPanel.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent });
-				});
+				readFileOpenVis(reactPanel, fileUri, context.extensionPath);
 			}
 			updateReactPanel(reactPanel);
 		})
@@ -96,8 +82,51 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('aldesco-extension.duplicateVis', () => {
 			if (reactPanel) {
 				reactPanel.duplicateActive(context.extensionPath);
+				reactPanel.changeTitle(basename);
 			} else {
 				vscode.window.showInformationMessage('No Visualizer Active to Duplicate');
+			}
+		})
+	);
+
+	//for opening the most recently generated visualizer log file
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.openMostRecentLogFile', () => {
+			const logFileDirPath = configuration.get('prototype.visualizerLogFileDirectoryLocation') as string;
+
+			const directories = fs.readdirSync(logFileDirPath, { withFileTypes: true })
+				.filter(dirent => dirent.isDirectory())
+				.map(dirent => dirent.name);
+
+			// Sort the directories based on their modification time (most recent first)
+			directories.sort((dirA, dirB) => {
+				const statsA = fs.statSync(path.join(logFileDirPath, dirA));
+				const statsB = fs.statSync(path.join(logFileDirPath, dirB));
+				return statsB.mtimeMs - statsA.mtimeMs;
+			});
+
+			if (directories.length > 0) {
+				const latestDir = directories[0];
+				const latestDirPath = path.join(logFileDirPath, latestDir);
+
+				// Get the list of files in the most recent directory
+				const files = fs.readdirSync(latestDirPath, { withFileTypes: true })
+					.filter(dirent => dirent.isFile())
+					.map(dirent => dirent.name);
+
+				// Sort the files based on their modification time (most recent first)
+				files.sort((fileA, fileB) => {
+					const statsA = fs.statSync(path.join(latestDirPath, fileA));
+					const statsB = fs.statSync(path.join(latestDirPath, fileB));
+					return statsB.mtimeMs - statsA.mtimeMs;
+				});
+
+				if (files.length > 0) {
+					const latestFile = files[0];
+					const latestFilePath = path.join(latestDirPath, latestFile);
+
+					readFileOpenVis(reactPanel, vscode.Uri.file(latestFilePath), context.extensionPath);
+				}
 			}
 		})
 	);
@@ -139,9 +168,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 }
 
-
 function updateReactPanel(reactPanel: ReactPanel | undefined) {
 	vscode.commands.executeCommand('setContext', 'reactPanel', reactPanel);
+}
+
+function readFileOpenVis(reactPanel: ReactPanel | undefined, fileUri: vscode.Uri, extensionPath: string) {
+	vscode.workspace.fs.readFile(fileUri).then(content => {
+		const jsonContent = content.toString();
+		reactPanel = ReactPanel.createOrShow(extensionPath, fileUri.fsPath);
+		// Pass the file name and content to the webview
+		reactPanel.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent });
+	});
 }
 
 // This method is called when your extension is deactivated
