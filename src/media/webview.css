@@ -4,12 +4,12 @@ body {
 
 /* Light Mode Styles */
 .light-mode {
-    background-color: rgb(54, 255, 255);
-    color: darkviolet;
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
 }
 
 /* Dark Mode Styles */
 .dark-mode {
-    background-color: rgb(77, 0, 0);
-    color: pink;
+    background-color: rgb(88, 88, 88);
+    color: rgb(255, 255, 255);
 }
