@@ -29,18 +29,20 @@ export default class ReactPanel {
 	private readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
 
 
-	public static createOrShow(extensionPath: string, fileName?: string): ReactPanel {
-		const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
-
-		// If we already have a panel, show it.
-		// Otherwise, create a new panel.
-		if (ReactPanel.currentReactPanel) {
-			ReactPanel.currentReactPanel._panel.reveal(column);
-			return ReactPanel.currentReactPanel;
-		} else {
-			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');
-			return ReactPanel.currentReactPanel;
-		}
+	public static createOrShow(extensionPath: string, fileName?: string): Promise<ReactPanel> {
+		return new Promise<ReactPanel>((resolve) => {
+			const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
+	
+			// If we already have a panel, show it.
+			// Otherwise, create a new panel.
+			if (ReactPanel.currentReactPanel) {
+				ReactPanel.currentReactPanel._panel.reveal(column);
+				resolve(ReactPanel.currentReactPanel);
+			} else {
+				ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');
+				resolve(ReactPanel.currentReactPanel);
+			}
+		})
 	}
 
 	public static createOrShowLH(extensionPath: string): ReactPanel {
