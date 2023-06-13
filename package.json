@@ -9,35 +9,182 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "aldesco-extension.visualizer",
-        "title": "Visualizer: Open Visualizer"
+        "title": "Open Visualizer",
+        "category": "Visualizer"
       },
       {
         "command": "aldesco-extension.rightClickLogFile",
-        "title": "Visualizer: Open in Visualizer"
+        "title": "Open in Visualizer",
+        "category": "Visualizer"
       },
       {
-        "command": "aldesco-extension.openJsonInVis",
-        "title": "Visualizer: Open Log File in Visualizer"
+        "command": "aldesco-extension.openLogFileInVis",
+        "title": "Open Log File in Visualizer",
+        "category": "Visualizer"
       },
       {
         "command": "aldesco-extension.connectToVisLH",
-        "title": "Visualizer: Connect to localhost (debugging)"
+        "title": "Connect to localhost (debugging)",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.duplicateVis",
+        "title": "Duplicate",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.sendMessage",
+        "title": "Send Message",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.openAST",
+        "title": "Open AST",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.openPattern",
+        "title": "Open Pattern",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.startPrototype",
+        "title": "Start Prototype",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.selectOutputLocation",
+        "title": "Select Output Location",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.openMostRecentLogFile",
+        "title": "Open Most Recent Log File in Visualizer",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.visualizeSpoonAST",
+        "title": "Visualize Spoon AST",
+        "category": "Visualizer"
       }
     ],
     "menus": {
-      "explorer/context": [
+      "commandPalette": [
+        {
+          "command": "aldesco-extension.openAST",
+          "title": "Open AST",
+          "category": "Visualizer",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.openPattern",
+          "title": "Open Pattern",
+          "category": "Visualizer",
+          "when": "false"
+        },
         {
           "command": "aldesco-extension.rightClickLogFile",
-          "when": "resourceLangId == json || resourceFilename =~ /\\.json-[0-9][0-9]*$/",
+          "title": "Open in Visualizer",
+          "category": "Visualizer",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.duplicateVis",
+          "title": "Duplicate",
+          "category": "Visualizer",
+          "when": "reactPanel"
+        },
+        {
+          "command": "aldesco-extension.selectOutputLocation",
+          "title": "Select Output Location",
+          "category": "Visualizer",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.visualizeSpoonAST",
+          "title": "Visualize Spoon AST",
+          "category": "Visualizer",
+          "when": "isEditorJava"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "aldesco-extension.rightClickLogFile",
+          "when": "resourceFilename =~ /\\-vis/",
           "group": "navigation"
         }
+      ],
+      "editor/context": [
+        {
+          "command": "aldesco-extension.visualizeSpoonAST",
+          "when": "isEditorJava"
+        }
+      ],
+      "aldesco-extension.rightClickLogFile": [
+        {
+          "command": "aldesco-extension.openAST",
+          "category": "Visualizer",
+          "group": "aldesco-extension.rightClickLogFile@1"
+        },
+        {
+          "command": "aldesco-extension.openPattern",
+          "category": "Visualizer",
+          "group": "aldesco-extension.rightClickLogFile@2"
+        },
+        {
+          "command": "aldesco-extension.rightClickLogFile",
+          "category": "Visualizer",
+          "group": "aldesco-extension.rightClickLogFile@3"
+        }
       ]
+    },
+    "submenus": [
+      {
+        "id": "aldesco-extension.rightClickLogFile",
+        "label": "Open in Visualizer"
+      }
+    ],
+    "configuration": {
+      "title": "AlDeSCo",
+      "properties": {
+        "aldesco-extension.visualizer.enableDarkMode": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Enables Dark Mode in the Visualizer Webview."
+        },
+        "aldesco-extension.prototype.outputLocation": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of Prototype Output file."
+        },
+        "aldesco-extension.prototype.inputLocation": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of Prototype Input Directory."
+        },
+        "aldesco-extension.prototype.chainLocation": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of Prototype Chain."
+        },
+        "aldesco-extension.prototype.aldescoProjectDirectory": {
+          "type": "string",
+          "format": "uri",
+          "default": "C:\\Users",
+          "description": "Set Location of AlDeSCo Project Directory."
+        }
+      }
     }
   },
   "scripts": {
@@ -49,16 +196,17 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.78.0",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
+    "@types/underscore": "^1.11.5",
+    "@types/vscode": "^1.78.0",
     "@typescript-eslint/eslint-plugin": "^5.53.0",
     "@typescript-eslint/parser": "^5.53.0",
+    "@vscode/test-electron": "^2.2.3",
     "eslint": "^8.34.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "typescript": "^4.9.5",
-    "@vscode/test-electron": "^2.2.3"
+    "typescript": "^4.9.5"
   }
 }
