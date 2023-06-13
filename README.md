@@ -4,6 +4,7 @@ How to work with this extension:
 2. change to the visualizer directory and run <npm run build> 
 3. press F5 select VS Extension Developement (preview)
 4. In the new vsc window: press cntrl + shift + p or open vsc command window and type visualizer
+5. Make sure to set the right paths in the Extension Settings
 
 # aldesco-extension README
 
@@ -21,22 +22,19 @@ For example if there is an image subfolder under your extension project workspac
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+You need to have the aldesco-prototype repository on your device.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+Make sure you have set the Paths required in the Extension settings:
 
-For example:
-
-This extension contributes the following settings:
-
-- `myExtension.enable`: Enable/disable this extension.
-- `myExtension.thing`: Set to `blah` to do something.
+- aldesco-extension.prototype.aldescoProjectDirectory
+-> sets the Location of the aldesco-prototype project directory 
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Sometimes the Visualizer does not load properly.
+Fix: Click Hide/Show view or reload the same file.
 
 ## Release Notes
 
