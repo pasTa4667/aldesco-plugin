@@ -74,6 +74,21 @@
         "command": "aldesco-extension.visualizeSpoonAST",
         "title": "Visualize Spoon AST",
         "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.setChain",
+        "title": "Set Chain",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.currentChain",
+        "title": "Show current Chain",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.folderMatching",
+        "title": "Match Folder with Chain",
+        "category": "Visualizer"
       }
     ],
     "menus": {
@@ -119,6 +134,16 @@
         {
           "submenu": "aldesco-extension.rightClickLogFile",
           "when": "resourceFilename =~ /\\-vis/",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.setChain",
+          "when": "resourceFilename =~ /\\.java|\\.class$/",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.folderMatching",
+          "when": "resourceScheme == file && resourceExtname == ''",
           "group": "navigation"
         }
       ],
@@ -175,8 +200,8 @@
         "aldesco-extension.prototype.chainLocation": {
           "type": "string",
           "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of Prototype Chain."
+          "default": "",
+          "description": "Set Location of Chain."
         },
         "aldesco-extension.prototype.aldescoProjectDirectory": {
           "type": "string",
