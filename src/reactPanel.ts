@@ -66,6 +66,7 @@ export default class ReactPanel {
 
 			if (!ReactPanel._activePanel.group) {
 				ReactPanel._activePanel.group = ReactPanel._group++;
+				this.sendMessage('VSC:SetGroup', { group: ReactPanel._activePanel.group, join: false });
 			}
 
 			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, ReactPanel._activePanel.group);
@@ -95,48 +96,37 @@ export default class ReactPanel {
 		const newPanel = { panel: this._panel, id: id, group: group ? group : undefined };
 		ReactPanel._panels.push(newPanel);
 		ReactPanel._activePanel = newPanel;
-
-		if (group) {
-			this.broadcastMessage('VSC:SetGroup', group);
-		}
-		console.log("new panel: ", newPanel.id, newPanel.group);
-
+		
 		// Set the webview's initial html content 
 		lh ? this._panel.webview.html = this._getHtmlForWebviewLH() : this._panel.webview.html = this._getHtmlForWebview();
-
+		
 		// Listen for when the panel is disposed
 		// This happens when the user closes the panel or when the panel is closed programatically
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
+		
 		// Handle messages from the webview not working for some reason
 		this._panel.webview.onDidReceiveMessage(message => {
 			console.log('vsc: message received', message.type);
-			switch (message.type) {
-				case 'alert':
-					vscode.window.showErrorMessage(message.text);
-					return;
-				case 'VSCtest':
-					console.log('vsc: test received', message.message);
-					return;
-				default:
-					console.log('vsc: default received');
-					return;
-			}
 		}, null, this._disposables);
-
+		
 		this._panel.onDidDispose(() => {
 			this._panel.dispose();
 		})
-
+		
 		this._panel.onDidChangeViewState(() => {
 			if (this._panel.active) {
 				ReactPanel._activePanel.panel = this._panel;
 			}
 		})
+		
+		if (group) {
+			this.sendMessage('VSC:SetGroup', {group: group, join: true });
+		}
+		console.log("new panel: ", newPanel.id, newPanel.group);
 	}
-
+	
 	public sendMessage(type: string, message: any) {
-		console.log("vsc: message send");
+		console.log("vsc: message send ", type);
 		this._panel.webview.postMessage({ type: type, message: message });
 	}
 
@@ -213,9 +203,10 @@ export default class ReactPanel {
 		<meta charset="utf-8"><title>AST Prototype Visualizer</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="${iconUri}">
 		<meta http-equiv="Content-Security-Policy" content="default-src *; script-src 'unsafe-inline' 'unsafe-eval' *; style-src 'unsafe-inline' *; img-src *; font-src * data:">
 		<link rel="stylesheet" href=${cssUri}>
-		<script defer="defer" src="${scriptUri}"></script>
 		</head>
-		<body class=${colorScheme}></body>
+		<body class=${colorScheme}>
+		<script defer="defer" src="${scriptUri}"></script>
+		</body>
 		</html>`;
 	}
 
