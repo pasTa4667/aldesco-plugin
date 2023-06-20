@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import path = require("path");
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 export default class Prototype {
@@ -7,6 +7,7 @@ export default class Prototype {
     private static readonly _prototypePath = 'prototype/ast-prototype-1.0.0.jar';
     private static readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
     private static readonly _aldescoProjectDir = this._configuration.get('prototype.aldescoProjectDirectory') as string;
+    private static _output: vscode.OutputChannel;
 
     public static visualizeSpoonAST(extensionPath: string, file: string, startLine?: number): Promise<boolean>{
         return new Promise((resolve) => {
@@ -37,42 +38,83 @@ export default class Prototype {
         });
     }
 
-    public static execute(extensionPath: string, ...args: string[]) {
-        const prototype = path.join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar');
-        const testFolder = path.join(extensionPath, 'prototype', 'files', '12');
-        const chain = path.join(extensionPath, 'prototype', 'chains', 'FindAllMethods.class');
+    public static compileJavaFile(extensionPath: string, file: string): Promise<boolean>{
+        return new Promise<boolean>((resolve) => {
+            console.log('compiling: ', file);
+            const outputDir = path.join(extensionPath, 'prototype', 'chains');
+           
+            const childProcess = spawn('javac', ['-d', outputDir, file]);
 
-        const outputLocation = this._configuration.get('prototype.outputLocation') as string;
-        const chainLocation = this._configuration.get('prototype.chainLocation') as string;
-        let inputLocation = this._configuration.get('prototype.inputLocation') as string;
-        inputLocation = inputLocation;
+            // Handle events and output from the child process
+            childProcess.stdout.on('data', (data) => {
+                vscode.window.showInformationMessage(`Compiled successfully: ${data}`);
+            });
 
-        console.log(inputLocation);
+            childProcess.stderr.on('data', (data) => {
+                vscode.window.showErrorMessage(`File couldn't be compiled:\n ${data}`);
+                resolve(false);
+            });
 
-        args.push('--chain');
-        args.push(chainLocation);
-        args.push('--input');
-        args.push(inputLocation);
-        args.push('--output');
-        args.push(outputLocation);
-
-        args.forEach((value) => {
-            console.log(value);
-        })
-
-        const childProcess = spawn('java', ['-jar', this._prototypePath, ...args], { cwd: extensionPath });
-
-        // Handle events and output from the child process
-        childProcess.stdout.on('data', (data) => {
-            console.log(`stdout: ${data}`);
-        });
-
-        childProcess.stderr.on('data', (data) => {
-            console.error(`stderr: ${data}`);
-        });
-
-        childProcess.on('close', (code) => {
-            console.log(`child process exited with code ${code}`);
+            childProcess.on('close', (code) => {
+                code === 0 ? resolve(true) : resolve(false);
+                console.log(`child process exited with code ${code}`);
+            });
         });
     }
+
+    public static matchFolderWithChain(extensionPath: string, chainPath: string, folderPath: string): Promise<boolean> {     
+        return new Promise<boolean>((resolve) => {
+            const prototypePath = path.join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar');
+            let outputPath;
+            const currentWorkspaceFolder = vscode.workspace.workspaceFolders?.[0]; // Get the first workspace folder
+            if (currentWorkspaceFolder) {
+                outputPath = path.join(currentWorkspaceFolder.uri.fsPath, 'output-result.json');
+            } else {
+                outputPath = path.join(extensionPath, 'prototype', 'output-result.json');
+            }
+            console.log(prototypePath);
+    
+            const args = [];
+    
+            args.push('--chain');
+            args.push(chainPath);
+            args.push('--input');
+            args.push(folderPath);
+            args.push('--output');
+            args.push(outputPath);
+
+            args.forEach((a) => console.log(a));
+
+            const childProcess = spawn('java', ['-jar', prototypePath, ...args], { cwd: extensionPath });
+
+            const output = this.createOrShowOuptut();
+  
+            // Handle events and output from the child process
+            childProcess.stdout.on('data', (data) => {
+                const parsed = (data.toString() as string).replace('', '->');
+                output.append(parsed);
+            });
+    
+            childProcess.stderr.on('data', (data) => {
+                console.error(`stderr: ${data}`);
+                resolve(false);
+            });
+    
+            childProcess.on('close', (code) => {
+                code === 0 ? resolve(true) : resolve(false);
+                console.log(`child process exited with code ${code}`);
+            });
+        })
+    }
+
+    private static createOrShowOuptut(): vscode.OutputChannel{
+        if(this._output){
+            this._output.show();
+            return this._output;
+        }
+        this._output = vscode.window.createOutputChannel('Aldesco Output');
+        this._output.show();
+        return this._output;
+    }
+
 }
