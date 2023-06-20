@@ -5,7 +5,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import ReactPanel from './reactPanel';
 import Prototype from './prototype';
-import { forEach } from 'underscore';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -27,12 +26,13 @@ export function activate(context: vscode.ExtensionContext) {
 	let basename: string;
 	let fileContent: string;
 
+	//current chain for prototype matching
+	let chain = configuration.get('prototype.chainLocation', '');
+
 	//Opens Visualizer without log File
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.visualizer', async () => {
 			reactPanel = await ReactPanel.createOrShow(context.extensionPath);
-			//opens the last used vis file
-			reactPanel.sendMessage('VSC:OpenFile' , {name: '', content: '', tree: '/'});
 			updateReactPanel(reactPanel);
 		})
 	);
@@ -49,8 +49,11 @@ export function activate(context: vscode.ExtensionContext) {
 				if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
 					tree = '/';
 				}
-				console.log(tree);
-				reactPanel.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
+				console.log(basename);
+				//really make sure the message is only send when the reactPanel is ready
+				setTimeout(() => {
+					reactPanel?.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
+				}, 700);
 			}
 			updateReactPanel(reactPanel);
 		})
@@ -71,14 +74,19 @@ export function activate(context: vscode.ExtensionContext) {
 				}).then(fileUris => {
 					if (fileUris && fileUris[0]) {
 						const fileUri = fileUris[0];
-						readFileOpenVis(reactPanel, fileUri, context.extensionPath);
+						readFileOpenVis(fileUri, context.extensionPath).then((rp) => {
+							reactPanel = rp;
+							updateReactPanel(reactPanel);
+						});
 					}
 				});
 			} else {
 				const fileUri = activeEditor.document.uri;
-				readFileOpenVis(reactPanel, fileUri, context.extensionPath);
+				readFileOpenVis(fileUri, context.extensionPath).then((rp) => {
+					reactPanel = rp;
+					updateReactPanel(reactPanel);
+				});
 			}
-			updateReactPanel(reactPanel);
 		})
 	);
 
@@ -139,7 +147,10 @@ export function activate(context: vscode.ExtensionContext) {
 					if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
 						tree = '/';
 					}
-					readFileOpenVis(reactPanel, vscode.Uri.file(latestFilePath), context.extensionPath, tree);
+					readFileOpenVis(vscode.Uri.file(latestFilePath), context.extensionPath, tree).then((rp) => {
+						reactPanel = rp;
+						updateReactPanel(reactPanel);
+					});
 				}
 			}
 		})
@@ -157,12 +168,48 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-
-	
-	//start prototype folder matching
+	//set a .java or .class file as chain
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.startPrototype', () => {
-			Prototype.execute(context.extensionPath);
+		vscode.commands.registerCommand('aldesco-extension.setChain', async (fileUri: vscode.Uri) => {
+			const chainDir = path.join(context.extensionPath, 'prototype', 'chain');
+			console.log(fileUri);
+			if (!fileUri) {
+				vscode.window.showOpenDialog({
+					canSelectFiles: true,
+					canSelectFolders: false,
+					canSelectMany: false,
+					filters: {
+						'ClassFiles': ['class']
+					}
+				}).then(async fileUris => {
+					if (fileUris && fileUris[0]) {
+						const file = fileUris[0];
+						chain = file.fsPath;
+						await configuration.update('prototype.chainLocation', chain);
+						vscode.window.showInformationMessage('Current chain updated to:', path.posix.basename(file.fsPath));
+
+					}
+				});
+			} else if(fileUri.fsPath.includes('.java')){
+				const content = fs.readFileSync(fileUri.fsPath, 'utf-8');
+
+				if (!content.includes('PatternMatchingDescriptionChain')){
+					vscode.window.showErrorMessage('File is not a valid chain', path.posix.basename(fileUri.path));
+					return;
+				}
+
+				if(await Prototype.compileJavaFile(context.extensionPath, fileUri.fsPath)){
+					chain = path.join(chainDir, path.basename(fileUri.fsPath));
+					await configuration.update('prototype.chainLocation', chain);
+					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.posix.basename(fileUri.fsPath));
+				}
+			
+			} else if (fileUri.fsPath.includes('.class')){
+				chain = fileUri.fsPath;
+				await configuration.update('prototype.chainLocation', chain);
+				vscode.window.showInformationMessage('Current chain updated to:', path.posix.basename(fileUri.fsPath));
+			
+			}
 		})
 	);
 	
@@ -181,6 +228,42 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		})
 	);
+
+	//starts prototype folder matching with current chain
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.folderMatching', async (folder: vscode.Uri) => {
+			chain = configuration.get('prototype.chainLocation', '');
+			console.log('is', chain);
+			if(!chain)
+				vscode.window.showErrorMessage('Chain is not set!');
+
+			if(!folder){
+				vscode.window.showOpenDialog({
+					canSelectFiles: false,
+					canSelectFolders: true,
+					canSelectMany: false,
+				}).then(folderUris => {
+					if (folderUris && folderUris[0]) {
+						folder = folderUris[0];	
+						Prototype.matchFolderWithChain(context.extensionPath, chain, folder.fsPath);	
+					}
+				});
+			}else{
+				Prototype.matchFolderWithChain(context.extensionPath, chain, folder.fsPath);	
+			}
+		})
+	);
+
+	//outputs the current chain
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.currentChain', () => {
+			if(chain){
+				vscode.window.showInformationMessage('Current Chain is:', chain);
+			}else{
+				vscode.window.showInformationMessage('Chain is not set!');
+			}
+		})
+	);
 		
 	//connect to visualizer via url (locally start visualizer first) (mainly for easier debugging)
 	context.subscriptions.push(
@@ -193,7 +276,13 @@ export function activate(context: vscode.ExtensionContext) {
 	//testing
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.sendMessage', () => {
-			reactPanel?.sendMessage("test", "heeeeelllo");
+			let activeTerminal = vscode.window.activeTerminal;
+			if (!activeTerminal) {
+				activeTerminal = vscode.window.createTerminal();
+			}
+			activeTerminal.show();
+			activeTerminal.sendText('hello');
+			//reactPanel?.sendMessage("test", "heeeeelllo");
 		})
 	);
 
@@ -201,7 +290,6 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.window.onDidChangeActiveTextEditor((editor) => {
 		updateIsEditorJava(editor);
 	});
-
 }
 
 function updateIsEditorJava(editor: vscode.TextEditor | undefined){
@@ -216,13 +304,14 @@ function updateReactPanel(reactPanel: ReactPanel | undefined) {
 	vscode.commands.executeCommand('setContext', 'reactPanel', reactPanel);
 }
 
-function readFileOpenVis(reactPanel: ReactPanel | undefined, fileUri: vscode.Uri, extensionPath: string, tree?: string) {
-	vscode.workspace.fs.readFile(fileUri).then(async content => {
-		const jsonContent = content.toString();
-		reactPanel = await ReactPanel.createOrShow(extensionPath, fileUri.fsPath);
-		// Pass the file name and content to the webview
-		reactPanel.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent, tree: tree? tree : '/' });
-	});
+async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?: string): Promise<ReactPanel | undefined> {
+	const content = await vscode.workspace.fs.readFile(fileUri);
+	const jsonContent = content.toString();
+	const reactPanel = await ReactPanel.createOrShow(extensionPath, fileUri.fsPath);
+	setTimeout(() => {
+		reactPanel?.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent, tree: tree? tree : '/' });
+	}, 700);
+	return reactPanel;
 }
 
 // This method is called when your extension is deactivated
