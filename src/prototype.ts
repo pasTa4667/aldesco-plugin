@@ -20,7 +20,8 @@ export default class Prototype {
             }
             
             const childProcess = spawn('java', ['-jar', prototypeJarLocation, ...args], { cwd: this._aldescoProjectDir });
-    
+            //const childProcess = spawn('java', ['-jar', this._prototypePath, ...args], { cwd: extensionPath });
+
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
                vscode.window.showInformationMessage(`Vsualizer: ${data}`);
@@ -66,11 +67,12 @@ export default class Prototype {
         return new Promise<boolean>((resolve) => {
             const prototypePath = path.join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar');
             let outputPath;
-            const currentWorkspaceFolder = vscode.workspace.workspaceFolders?.[0]; // Get the first workspace folder
+            const currentWorkspaceFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            //if workspace folder exists use it as ouput location
             if (currentWorkspaceFolder) {
                 outputPath = path.join(currentWorkspaceFolder.uri.fsPath, 'output-result.json');
             } else {
-                outputPath = path.join(extensionPath, 'prototype', 'output-result.json');
+                outputPath = path.join('prototype', 'output-result.json');
             }
             console.log(prototypePath);
     

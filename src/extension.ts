@@ -53,7 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
 				//really make sure the message is only send when the reactPanel is ready
 				setTimeout(() => {
 					reactPanel?.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
-				}, 700);
+				}, 1000);
 			}
 			updateReactPanel(reactPanel);
 		})
@@ -220,7 +220,6 @@ export function activate(context: vscode.ExtensionContext) {
 			if(activeEditor){
 				const fileUri = activeEditor.document.uri;
 				const startLine = activeEditor.selection.start;
-
 				//startLine + 1 since vscode gives us the line before the selected line 
 				if (await Prototype.visualizeSpoonAST(context.extensionPath, fileUri.fsPath, startLine && args.length > 0 ? startLine.line + 1: undefined)){
 					vscode.commands.executeCommand('aldesco-extension.openMostRecentLogFile', '/ASTView');
@@ -310,7 +309,8 @@ async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?
 	const reactPanel = await ReactPanel.createOrShow(extensionPath, fileUri.fsPath);
 	setTimeout(() => {
 		reactPanel?.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent, tree: tree? tree : '/' });
-	}, 700);
+		console.log('opened');
+	}, 1000);
 	return reactPanel;
 }
 

@@ -120,7 +120,9 @@ export default class ReactPanel {
 		})
 		
 		if (group) {
-			this.sendMessage('VSC:SetGroup', {group: group, join: true });
+			setTimeout(() => {
+				this.sendMessage('VSC:SetGroup', { group: group, join: true });
+			}, 1000); 
 		}
 		console.log("new panel: ", newPanel.id, newPanel.group);
 	}
