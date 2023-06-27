@@ -2,6 +2,10 @@
   "name": "aldesco-extension",
   "displayName": "AlDeSCo Extension",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.uni-ulm.de/se/aldesco/vscode-extension.git"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.78.0"
@@ -56,11 +60,6 @@
         "category": "Visualizer"
       },
       {
-        "command": "aldesco-extension.startPrototype",
-        "title": "Start Prototype",
-        "category": "Visualizer"
-      },
-      {
         "command": "aldesco-extension.selectOutputLocation",
         "title": "Select Output Location",
         "category": "Visualizer"
@@ -88,6 +87,16 @@
       {
         "command": "aldesco-extension.folderMatching",
         "title": "Match Folder with Chain",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.connectToServer",
+        "title": "Connect to Visualizer",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.openVisInBrowser",
+        "title": "Open Visualizer in Browser",
         "category": "Visualizer"
       }
     ],
@@ -233,5 +242,8 @@
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
     "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "date-fns": "^2.30.0"
   }
 }

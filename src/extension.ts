@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import ReactPanel from './reactPanel';
 import Prototype from './prototype';
+import { spawn } from 'child_process';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -13,6 +14,9 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('extension "aldesco-extension" is now active!');
+
+	const port = '8080';
+	startServer(context.extensionPath, port);
 
 	// The commands have been defined in the package.json file
 	// The commandId parameter must match the command field in package.json
@@ -27,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
 	let fileContent: string;
 
 	//current chain for prototype matching
-	let chain = configuration.get('prototype.chainLocation', '');
+	let chain: string;
 
 	//Opens Visualizer without log File
 	context.subscriptions.push(
@@ -105,24 +109,34 @@ export function activate(context: vscode.ExtensionContext) {
 	//for opening the most recently generated visualizer log file
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.openMostRecentLogFile', (tree?: string) => {
-			const aldescoProjectDir = configuration.get('prototype.aldescoProjectDirectory') as string;
-			const logFileDirPath = path.join(aldescoProjectDir, '.visualizer-logs');
-			console.log(logFileDirPath);
+			const wsFolder = vscode.workspace.workspaceFolders?.[0];
+			
+			if(!wsFolder){
+				vscode.window.showWarningMessage('There is no accessible .visualizer-logs folder within your current Project!');
+				return;
+			}
 
-			const directories = fs.readdirSync(logFileDirPath, { withFileTypes: true })
+			const visLogsFolder = path.join(wsFolder.uri.fsPath, 'aldesco-output', '.visualizer-logs');
+
+			if(!fs.existsSync(visLogsFolder)){
+				vscode.window.showWarningMessage('There is no accessible .visualizer-logs folder within your current Project!');
+				return;
+			}
+
+			const directories = fs.readdirSync(visLogsFolder, { withFileTypes: true })
 				.filter(dirent => dirent.isDirectory())
 				.map(dirent => dirent.name);
 
 			// Sort the directories based on their modification time (most recent first)
 			directories.sort((dirA, dirB) => {
-				const statsA = fs.statSync(path.join(logFileDirPath, dirA));
-				const statsB = fs.statSync(path.join(logFileDirPath, dirB));
+				const statsA = fs.statSync(path.join(visLogsFolder, dirA));
+				const statsB = fs.statSync(path.join(visLogsFolder, dirB));
 				return statsB.mtimeMs - statsA.mtimeMs;
 			});
 
 			if (directories.length > 0) {
 				const latestDir = directories[0];
-				const latestDirPath = path.join(logFileDirPath, latestDir);
+				const latestDirPath = path.join(visLogsFolder, latestDir);
 
 				// Get the list of files in the most recent directory
 				const files = fs.readdirSync(latestDirPath, { withFileTypes: true })
@@ -173,6 +187,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('aldesco-extension.setChain', async (fileUri: vscode.Uri) => {
 			const chainDir = path.join(context.extensionPath, 'prototype', 'chain');
 			console.log(fileUri);
+			//either open file explorer
 			if (!fileUri) {
 				vscode.window.showOpenDialog({
 					canSelectFiles: true,
@@ -185,29 +200,30 @@ export function activate(context: vscode.ExtensionContext) {
 					if (fileUris && fileUris[0]) {
 						const file = fileUris[0];
 						chain = file.fsPath;
-						await configuration.update('prototype.chainLocation', chain);
-						vscode.window.showInformationMessage('Current chain updated to:', path.posix.basename(file.fsPath));
+						await configuration.update('prototype.chainLocation', chain, false);
+						vscode.window.showInformationMessage('Current chain updated to:', path.basename(file.fsPath));
 
 					}
 				});
+			//or get the right clicked file
 			} else if(fileUri.fsPath.includes('.java')){
 				const content = fs.readFileSync(fileUri.fsPath, 'utf-8');
 
 				if (!content.includes('PatternMatchingDescriptionChain')){
-					vscode.window.showErrorMessage('File is not a valid chain', path.posix.basename(fileUri.path));
+					vscode.window.showErrorMessage('File is not a valid chain', path.basename(fileUri.path));
 					return;
 				}
 
 				if(await Prototype.compileJavaFile(context.extensionPath, fileUri.fsPath)){
 					chain = path.join(chainDir, path.basename(fileUri.fsPath));
-					await configuration.update('prototype.chainLocation', chain);
-					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.posix.basename(fileUri.fsPath));
+					await configuration.update('prototype.chainLocation', chain, false);
+					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.basename(fileUri.fsPath));
 				}
 			
 			} else if (fileUri.fsPath.includes('.class')){
 				chain = fileUri.fsPath;
-				await configuration.update('prototype.chainLocation', chain);
-				vscode.window.showInformationMessage('Current chain updated to:', path.posix.basename(fileUri.fsPath));
+				await configuration.update('prototype.chainLocation', chain, false);
+				vscode.window.showInformationMessage('Current chain updated to:', path.basename(fileUri.fsPath));
 			
 			}
 		})
@@ -231,10 +247,10 @@ export function activate(context: vscode.ExtensionContext) {
 	//starts prototype folder matching with current chain
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.folderMatching', async (folder: vscode.Uri) => {
-			chain = configuration.get('prototype.chainLocation', '');
-			console.log('is', chain);
-			if(!chain)
-				vscode.window.showErrorMessage('Chain is not set!');
+			//if chain was not set, get it from settings
+			if(!chain){
+				chain = configuration.get('prototype.chainLocation', '');
+			}
 
 			if(!folder){
 				vscode.window.showOpenDialog({
@@ -257,7 +273,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.currentChain', () => {
 			if(chain){
-				vscode.window.showInformationMessage('Current Chain is:', chain);
+				vscode.window.showInformationMessage('Current Chain is:', path.basename(chain));
 			}else{
 				vscode.window.showInformationMessage('Chain is not set!');
 			}
@@ -282,6 +298,22 @@ export function activate(context: vscode.ExtensionContext) {
 			activeTerminal.show();
 			activeTerminal.sendText('hello');
 			//reactPanel?.sendMessage("test", "heeeeelllo");
+		})
+	);
+
+	//connect to visualizer server
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.connectToServer', () =>{
+			const panel = vscode.window.createWebviewPanel('visualizer', 'Server', vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true});
+			panel.webview.html = getWebviewHtml(port);
+		})
+	);
+
+	//open Visualizer in Browser
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.openVisInBrowser', () => {
+			const url = `http://localhost:${port}`;
+			vscode.env.openExternal(vscode.Uri.parse(url));
 		})
 	);
 
@@ -313,6 +345,70 @@ async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?
 	}, 1000);
 	return reactPanel;
 }
+
+function startServer(cwd: string, port: string){
+	// spawns server process with specified port 
+	const serverProcess = spawn('serve', ['visualizer/dist', '-p', port], {cwd: cwd, shell: true});
+
+	// Optional: Handle server process events and errors
+	serverProcess.stdout.on('data', (data) => {
+		console.log(`Server output: ${data}`);
+	});
+
+	serverProcess.stderr.on('data', (data) => {
+		console.error(`Server error: ${data}`);
+	});
+
+	serverProcess.on('error', (error) => {
+		console.error(`Server process error: ${error.message}`);
+	});
+
+	serverProcess.on('close', (code) => {
+		console.log(`Server process exited with code ${code}`);
+	});
+}
+
+function getWebviewHtml(port: string){
+	return `<!DOCTYPE html>
+			<html lang="en">
+				<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>React App</title>
+				<style>
+					html, body {
+					margin: 0;
+					padding: 0;
+					height: 100%;
+					overflow: hidden;
+					background-color: rgb(88, 88, 88);
+    				color: rgb(0, 0, 0);
+					}
+
+					#root {
+					height: 100%;
+					}
+				</style>
+				</head>
+				<body>
+				<div id="root"></div>
+
+				<script>
+					// Add the necessary JavaScript code to load React app from server
+					const rootElement = document.getElementById('root');
+					const reactAppUrl = 'http://localhost:${port}';
+
+					const iframe = document.createElement('iframe');
+					iframe.src = reactAppUrl;
+					iframe.style.width = '100%';
+					iframe.style.height = '100%';
+					iframe.style.border = 'none';
+
+					rootElement.appendChild(iframe);
+				</script>
+				</body>
+				</html>`
+	}
 
 // This method is called when your extension is deactivated
 export function deactivate() { }

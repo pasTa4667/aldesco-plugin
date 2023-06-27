@@ -1,4 +1,6 @@
 import { spawn } from "child_process";
+import { format } from "date-fns";
+import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
@@ -7,20 +9,24 @@ export default class Prototype {
     private static readonly _prototypePath = 'prototype/ast-prototype-1.0.0.jar';
     private static readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
     private static readonly _aldescoProjectDir = this._configuration.get('prototype.aldescoProjectDirectory') as string;
-    private static _output: vscode.OutputChannel;
+    private static _outputChannel: vscode.OutputChannel;
+
+    private static readonly _outputFormat = 'd-MMM-yyyy-HH-mm-ss';
 
     public static visualizeSpoonAST(extensionPath: string, file: string, startLine?: number): Promise<boolean>{
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             const args = ['--file', file];
-            const prototypeJarLocation = path.join(this._aldescoProjectDir, 'build', 'libs', 'ast-prototype-1.0.0.jar');
             
             if(startLine){
                 args.push('--line');
                 args.push(startLine.toString());
             }
             
-            const childProcess = spawn('java', ['-jar', prototypeJarLocation, ...args], { cwd: this._aldescoProjectDir });
-            //const childProcess = spawn('java', ['-jar', this._prototypePath, ...args], { cwd: extensionPath });
+            //from where the command is run
+            const outputFolder = await this.createOrGetOutputFolder(extensionPath);
+            const absPrototypePath = path.join(extensionPath, this._prototypePath);
+
+            const childProcess = spawn('java', ['-jar', absPrototypePath, ...args], { cwd: outputFolder});
 
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
@@ -64,32 +70,32 @@ export default class Prototype {
     }
 
     public static matchFolderWithChain(extensionPath: string, chainPath: string, folderPath: string): Promise<boolean> {     
-        return new Promise<boolean>((resolve) => {
-            const prototypePath = path.join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar');
-            let outputPath;
-            const currentWorkspaceFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
-            //if workspace folder exists use it as ouput location
-            if (currentWorkspaceFolder) {
-                outputPath = path.join(currentWorkspaceFolder.uri.fsPath, 'output-result.json');
-            } else {
-                outputPath = path.join('prototype', 'output-result.json');
+        return new Promise<boolean>(async (resolve) => {
+            if(!chainPath){
+                vscode.window.showInformationMessage('Chain is not set!');
+                resolve(false);
             }
-            console.log(prototypePath);
-    
-            const args = [];
-    
+            const absPrototypePath = path.join(extensionPath, this._prototypePath);
+
+            const folderName = path.basename(folderPath);
+            const formattedDate = format(new Date(), this._outputFormat);
+            const outputName = `${folderName}-${formattedDate}.json`;
+
+            //from where the command is run and the output is being placed
+            const outputFolder = await this.createOrGetOutputFolder(extensionPath);
+            console.log(outputFolder);
+
+            const args = []; 
             args.push('--chain');
             args.push(chainPath);
             args.push('--input');
             args.push(folderPath);
             args.push('--output');
-            args.push(outputPath);
+            args.push(outputName);
 
-            args.forEach((a) => console.log(a));
+            const childProcess = spawn('java', ['-jar', absPrototypePath, ...args], { cwd: outputFolder });
 
-            const childProcess = spawn('java', ['-jar', prototypePath, ...args], { cwd: extensionPath });
-
-            const output = this.createOrShowOuptut();
+            const output = this.createOrShowOutputChannel();
   
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
@@ -109,14 +115,37 @@ export default class Prototype {
         })
     }
 
-    private static createOrShowOuptut(): vscode.OutputChannel{
-        if(this._output){
-            this._output.show();
-            return this._output;
+    private static createOrShowOutputChannel(): vscode.OutputChannel{
+        if(this._outputChannel){
+            this._outputChannel.show();
+            return this._outputChannel;
         }
-        this._output = vscode.window.createOutputChannel('Aldesco Output');
-        this._output.show();
-        return this._output;
+        this._outputChannel = vscode.window.createOutputChannel('Aldesco Output');
+        this._outputChannel.show();
+        return this._outputChannel;
+    }
+
+    private static async createOrGetOutputFolder(extensionPath: string): Promise<string>{
+        const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+        let outputPath: string;
+        if(wsFolder){
+            outputPath = path.join(wsFolder.uri.fsPath, 'aldesco-output');
+            
+            if(fs.existsSync(outputPath)){
+                return outputPath;
+            }
+            
+            try {
+                await fs.promises.mkdir(outputPath, { recursive: true });
+                console.log(`Directory ${outputPath} created`);
+                return outputPath;
+            } catch (err) {
+                console.error('Failed to create output directory:', err);
+                return path.join(extensionPath, 'prototype');
+            }
+        }else{
+            return path.join(extensionPath, 'prototype');
+        }
     }
 
 }
