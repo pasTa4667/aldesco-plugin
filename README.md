@@ -8,7 +8,7 @@
 
 # aldesco-extension README
 
-## Features {#features}
+## Features
 
 All features can be accessed via the `Command Palette` (Ctrl + Shift + P). Make sure to check the [Settings](#settings) to use all commands properly.
 
@@ -24,11 +24,11 @@ All features can be accessed via the `Command Palette` (Ctrl + Shift + P). Make 
 
 **5. Visualize Spoon AST**: Open a file to be visualized and either run the command in the `Command Palette` to visualize the entire file or right-click a line of a method or element to visualize the Spoon AST of the selected element.
 
-**6. Set a Chain and Match Folder**: A Chain can be set by either right-clicking a CLASS File in the VS Code Explorer or by running the command in the `Command Palette` and choosing a CLASS File in the File Explorer. The Chain can also be set by directly by providing the absolute path of a Chain inside the aldesco-extension [Settings](#extension-settings). To view the current Chain, run the **Show current Chain** command in the `Command Palette`. Lastly, right-click or select a folder with the **Match Folder with Chain** command and match the folder with the currently selected Chain.
+**6. Set a Chain and Match Folder**: A Chain can be set by either right-clicking a CLASS File in the VS Code Explorer or by running the command in the `Command Palette` and choosing a CLASS File in the File Explorer. The Chain can also be set by directly by providing the absolute path of a Chain inside the aldesco-extension [Settings](#settings). To view the current Chain, run the **Show current Chain** command in the `Command Palette`. Lastly, right-click or select a folder with the **Match Folder with Chain** command and match the folder with the currently selected Chain.
 
 ![Set Chain and Match Folder](media/match_feature.mp4)
 
-## Command List {#command-list}
+## Command List
 The most important commands have been described above. Here is a list of all the commands available.
 
 1. **Visualizer: Open Visualizer**
@@ -42,7 +42,7 @@ The most important commands have been described above. Here is a list of all the
 
 <Requirements>
 
-## Extension Settings {#settings}
+## Settings
 
 Make sure you have set the paths required in the Extension settings.
 
@@ -51,12 +51,12 @@ Make sure you have set the paths required in the Extension settings.
 
 > A reload is required after changing settings! 
 
-## Known Issues {#issues}
+## Known Issues
 
 Sometimes the Visualizer does not load properly.
 Fix: Click Hide/Show view or reload the same file.
 
-## Release Notes {#release-notes}
+## Release Notes
 
 Users appreciate release notes as you update your extension.
 
