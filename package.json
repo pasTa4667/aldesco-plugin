@@ -18,6 +18,15 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "type": "tree",
+          "id": "aldesco-extension.outputView",
+          "name": "Aldesco Output"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "aldesco-extension.visualizer",
@@ -199,12 +208,6 @@
           "format": "uri",
           "default": "C:\\Users",
           "description": "Set Location of Prototype Output file."
-        },
-        "aldesco-extension.prototype.inputLocation": {
-          "type": "string",
-          "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of Prototype Input Directory."
         },
         "aldesco-extension.prototype.chainLocation": {
           "type": "string",
