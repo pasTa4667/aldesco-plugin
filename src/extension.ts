@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import ReactPanel from './reactPanel';
 import Prototype from './prototype';
 import { spawn } from 'child_process';
+import {TreeViewProvider} from './TreeViewProvider';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -15,8 +16,16 @@ export function activate(context: vscode.ExtensionContext) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('extension "aldesco-extension" is now active!');
 
+	const rootPath =
+		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+			? vscode.workspace.workspaceFolders[0].uri.fsPath
+			: undefined;
+	vscode.window.createTreeView('aldesco-extension.outputView', {
+		treeDataProvider: new TreeViewProvider(rootPath!)
+	});
+
 	const port = '8080';
-	startServer(context.extensionPath, port);
+	//startServer(context.extensionPath, port);
 
 	// The commands have been defined in the package.json file
 	// The commandId parameter must match the command field in package.json

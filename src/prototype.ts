@@ -8,7 +8,6 @@ export default class Prototype {
 
     private static readonly _prototypePath = 'prototype/ast-prototype-1.0.0.jar';
     private static readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
-    private static readonly _aldescoProjectDir = this._configuration.get('prototype.aldescoProjectDirectory') as string;
     private static _outputChannel: vscode.OutputChannel;
 
     private static readonly _outputFormat = 'd-MMM-yyyy-HH-mm-ss';
@@ -47,10 +46,15 @@ export default class Prototype {
 
     public static compileJavaFile(extensionPath: string, file: string): Promise<boolean>{
         return new Promise<boolean>((resolve) => {
-            console.log('compiling: ', file);
-            const outputDir = path.join(extensionPath, 'prototype', 'chains');
-           
-            const childProcess = spawn('javac', ['-d', outputDir, file]);
+            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+
+            if(!wsFolder){
+                vscode.window.showInformationMessage('No Project found to compile file!');
+                return;
+            }
+            console.log('compiling in', wsFolder.uri.fsPath);
+            
+            const childProcess = spawn('gradlew', ['compileJava'], {cwd: wsFolder.uri.fsPath});
 
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {

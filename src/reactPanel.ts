@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { rejects } from 'assert';
 
 interface WebviewData {
 	panel?: vscode.WebviewPanel;
@@ -87,10 +86,6 @@ export default class ReactPanel {
 			enableScripts: true,
 			// To stop the webview from closing, when not active
 			retainContextWhenHidden: true,
-			// And restric the webview to only loading content from our visualizer build folder
-			// localResourceRoots: [
-			// 	vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist'))
-			// ],
 		});
 
 		const newPanel = { panel: this._panel, id: id, group: group ? group : undefined };
@@ -104,20 +99,15 @@ export default class ReactPanel {
 		// This happens when the user closes the panel or when the panel is closed programatically
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 		
-		// Handle messages from the webview not working for some reason
-		this._panel.webview.onDidReceiveMessage(message => {
-			console.log('vsc: message received', message.type);
-		}, null, this._disposables);
-		
-		this._panel.onDidDispose(() => {
-			this._panel.dispose();
-		})
-		
 		this._panel.onDidChangeViewState(() => {
 			if (this._panel.active) {
 				ReactPanel._activePanel.panel = this._panel;
 			}
 		})
+
+		this._panel.webview.onDidReceiveMessage((message) => {
+			console.log('message received in vsc');
+		});
 		
 		if (group) {
 			setTimeout(() => {
@@ -203,11 +193,27 @@ export default class ReactPanel {
 		<html>
 		<head>
 		<meta charset="utf-8"><title>AST Prototype Visualizer</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="${iconUri}">
-		<meta http-equiv="Content-Security-Policy" content="default-src *; script-src 'unsafe-inline' 'unsafe-eval' *; style-src 'unsafe-inline' *; img-src *; font-src * data:">
+		<meta http-equiv="Content-Security-Policy" default-src *  data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval' 'unsafe-dynamic'; 
+													script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; 
+													connect-src * data: blob: 'unsafe-inline'; 
+													img-src * data: blob: 'unsafe-inline'; 
+													frame-src * data: blob: ; 
+													style-src * data: blob: 'unsafe-inline';
+													font-src * data: blob: 'unsafe-inline';
+													frame-ancestors * data: blob: 'unsafe-inline';>
 		<link rel="stylesheet" href=${cssUri}>
 		</head>
 		<body class=${colorScheme}>
 		<script defer="defer" src="${scriptUri}"></script>
+		<script> 
+			(function() {
+				const vscode = acquireVsCodeApi();
+				vscode.postMessage({
+					command: 'alert',
+					text: '🐛  on line '
+				});
+			}())
+		</script>
 		</body>
 		</html>`;
 	}
