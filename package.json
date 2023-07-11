@@ -44,18 +44,13 @@
         "category": "Visualizer"
       },
       {
-        "command": "aldesco-extension.connectToVisLH",
-        "title": "Connect to localhost (debugging)",
-        "category": "Visualizer"
-      },
-      {
         "command": "aldesco-extension.duplicateVis",
         "title": "Duplicate",
         "category": "Visualizer"
       },
       {
-        "command": "aldesco-extension.sendMessage",
-        "title": "Send Message",
+        "command": "aldesco-extension.testing",
+        "title": "Testing",
         "category": "Visualizer"
       },
       {
@@ -66,11 +61,6 @@
       {
         "command": "aldesco-extension.openPattern",
         "title": "Open Pattern",
-        "category": "Visualizer"
-      },
-      {
-        "command": "aldesco-extension.selectOutputLocation",
-        "title": "Select Output Location",
         "category": "Visualizer"
       },
       {
@@ -85,7 +75,12 @@
       },
       {
         "command": "aldesco-extension.setChain",
-        "title": "Set Chain",
+        "title": "Set as Chain",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.compileAndSetChain",
+        "title": "Compile and set as Chain",
         "category": "Visualizer"
       },
       {
@@ -96,16 +91,6 @@
       {
         "command": "aldesco-extension.folderMatching",
         "title": "Match Folder with Chain",
-        "category": "Visualizer"
-      },
-      {
-        "command": "aldesco-extension.connectToServer",
-        "title": "Connect to Visualizer",
-        "category": "Visualizer"
-      },
-      {
-        "command": "aldesco-extension.openVisInBrowser",
-        "title": "Open Visualizer in Browser",
         "category": "Visualizer"
       }
     ],
@@ -136,16 +121,16 @@
           "when": "reactPanel"
         },
         {
-          "command": "aldesco-extension.selectOutputLocation",
-          "title": "Select Output Location",
-          "category": "Visualizer",
-          "when": "false"
-        },
-        {
           "command": "aldesco-extension.visualizeSpoonAST",
           "title": "Visualize Spoon AST",
           "category": "Visualizer",
           "when": "isEditorJava"
+        },
+        {
+          "command": "aldesco-extension.compileAndSetChain",
+          "title": "Compile and set as Chain",
+          "category": "Visualizer",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -157,6 +142,11 @@
         {
           "command": "aldesco-extension.setChain",
           "when": "resourceFilename =~ /\\.java|\\.class$/",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.compileAndSetChain",
+          "when": "resourceFilename =~ /\\.java/",
           "group": "navigation"
         },
         {
@@ -203,23 +193,16 @@
           "default": "false",
           "description": "Enables Dark Mode in the Visualizer Webview."
         },
-        "aldesco-extension.prototype.outputLocation": {
+        "aldesco-extension.prototype.sourceSetBuildLocation": {
           "type": "string",
-          "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of Prototype Output file."
+          "default": "",
+          "description": "Set Location the Source Set within the Projects build Folder (Optional)."
         },
         "aldesco-extension.prototype.chainLocation": {
           "type": "string",
           "format": "uri",
           "default": "",
           "description": "Set Location of Chain."
-        },
-        "aldesco-extension.prototype.aldescoProjectDirectory": {
-          "type": "string",
-          "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of AlDeSCo Project Directory."
         }
       }
     }
