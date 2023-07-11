@@ -27,6 +27,8 @@ export default class ReactPanel {
 	private _disposables: vscode.Disposable[] = [];
 	private readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
 
+	//message list to keep track of not acknowledged messages
+	private _messageList : {type: string}[] = [];
 
 	public static createOrShow(extensionPath: string, fileName?: string): Promise<ReactPanel> {
 		return new Promise<ReactPanel>((resolve) => {
@@ -42,20 +44,6 @@ export default class ReactPanel {
 				resolve(ReactPanel.currentReactPanel);
 			}
 		})
-	}
-
-	public static createOrShowLH(extensionPath: string): ReactPanel {
-		const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
-
-		// If we already have a panel, show it.
-		// Otherwise, create a new panel.
-		if (ReactPanel.currentReactPanel) {
-			ReactPanel.currentReactPanel._panel.reveal(column);
-			return ReactPanel.currentReactPanel;
-		} else {
-			ReactPanel.currentReactPanel = new ReactPanel(extensionPath, column || vscode.ViewColumn.One, undefined, undefined, true);
-			return ReactPanel.currentReactPanel;
-		}
 	}
 
 	public duplicateActive(extensionPath: string): ReactPanel | undefined {
@@ -75,7 +63,7 @@ export default class ReactPanel {
 		return;
 	}
 
-	private constructor(extensionPath: string, column: vscode.ViewColumn, group?: number, fileName?: string, lh?: boolean) {
+	private constructor(extensionPath: string, column: vscode.ViewColumn, group?: number, fileName?: string) {
 		this._extensionPath = extensionPath;
 		const idGenerator = this.idGenerator();
 		const id = idGenerator.next().value;
@@ -91,9 +79,12 @@ export default class ReactPanel {
 		const newPanel = { panel: this._panel, id: id, group: group ? group : undefined };
 		ReactPanel._panels.push(newPanel);
 		ReactPanel._activePanel = newPanel;
-		
+
+		//to receive an Ack when the visualizer has fully started
+		this._messageList.push({type: 'Started'});
+
 		// Set the webview's initial html content 
-		lh ? this._panel.webview.html = this._getHtmlForWebviewLH() : this._panel.webview.html = this._getHtmlForWebview();
+		this._panel.webview.html = this._getHtmlForWebview();
 		
 		// Listen for when the panel is disposed
 		// This happens when the user closes the panel or when the panel is closed programatically
@@ -105,8 +96,9 @@ export default class ReactPanel {
 			}
 		})
 
-		this._panel.webview.onDidReceiveMessage((message) => {
-			console.log('message received in vsc');
+		this._panel.webview.onDidReceiveMessage((event) => {
+			console.log('received in ReactPanel');
+			//not needed
 		});
 		
 		if (group) {
@@ -118,20 +110,44 @@ export default class ReactPanel {
 	}
 	
 	public sendMessage(type: string, message: any) {
-		console.log("vsc: message send ", type);
+		console.log("vsc: message send", type);
 		this._panel.webview.postMessage({ type: type, message: message });
 	}
 
-	public sendMessageAsync(type: string, message: any): Promise<void> {
-		return new Promise((resolve, rejects) => {
-			if (this._panel) {
-				console.log("vsc: message send async");
-				this._panel.webview.postMessage({ type: type, message: message });
-				resolve();
-			} else {
-				rejects();
-			}
+	public sendMessageWithAck(type: string, message: any):Promise<boolean> {
+		return new Promise<boolean>(async (res) => {
+			console.log("vsc: message send with Ack", type);
+			this._panel.webview.postMessage({ type: type, message: message });
+			this._messageList.push({type: type});
+
+			await this.messageReceived(type) ? res(true) : res(false);
 		})
+	}
+
+	private messageReceived(type:string){
+		return new Promise<boolean>(async (res) => {
+			//we give it 5 seconds until the message times out
+			const timeout = 5000;
+			const startTime = Date.now();
+
+			//wait until the messageList doesnt contain the message anymore
+			while (this._messageList.some((item) => item.type === type)) {
+				if (Date.now() - startTime > timeout) {
+					res(false);
+					console.log('message resolved false')
+					return;
+				}
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+			res(true);
+		})
+	}
+
+	private acknowledgeMessage(type: string){
+		const index = this._messageList.findIndex((item) => item.type === type);
+		if(index !== -1){
+			this._messageList.splice(index);
+		}
 	}
 
 	private broadcastMessage(type: string, message: any) {
@@ -207,38 +223,23 @@ export default class ReactPanel {
 		<script defer="defer" src="${scriptUri}"></script>
 		<script> 
 			(function() {
-				const vscode = acquireVsCodeApi();
-				vscode.postMessage({
-					command: 'alert',
-					text: '🐛  on line '
-				});
+				const vscode = acquireVsCodeApi();	
+				window.addEventListener("message", (event) => {
+					const { type, message } = event.data;
+					if(type === "Ack"){
+						console.log('Ack received');
+						vscode.postMessage("Ack");
+						${this.acknowledgeMessage('Ack')};
+					}else if(type === "Started"){
+						vscode.postMessage("Started");
+						console.log('Started received');
+						${this.acknowledgeMessage('Started')};
+					}
+				})
 			}())
 		</script>
 		</body>
 		</html>`;
 	}
 
-	private _getHtmlForWebviewLH() {
-		return `<html>
-		<head>
-			<style>
-			html, body {
-				margin: 0;
-				padding: 0;
-				height: 100%;
-				overflow: hidden;
-			}
-
-			iframe {
-				width: 100%;
-				height: 100%;
-				border: none;
-			}
-			</style>
-		</head>
-		<body>
-			<iframe src="http://localhost:8080" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
-		</body>
-		</html>`;
-	}
 }
