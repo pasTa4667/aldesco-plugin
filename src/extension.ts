@@ -5,8 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import ReactPanel from './reactPanel';
 import Prototype from './prototype';
-import { spawn } from 'child_process';
-import {TreeViewProvider} from './TreeViewProvider';
+import {TreeViewProvider} from './treeViewProvider';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -24,14 +23,11 @@ export function activate(context: vscode.ExtensionContext) {
 		treeDataProvider: new TreeViewProvider(rootPath!)
 	});
 
-	const port = '8080';
-	//startServer(context.extensionPath, port);
-
+	const configuration = vscode.workspace.getConfiguration('aldesco-extension');
 	// The commands have been defined in the package.json file
 	// The commandId parameter must match the command field in package.json
-	const configuration = vscode.workspace.getConfiguration('aldesco-extension');
-	
 	//get active editor and enable/disable visualizeSpoonAST command
+	
 	const activeEditor = vscode.window.activeTextEditor;
 	updateIsEditorJava(activeEditor);
 
@@ -53,9 +49,9 @@ export function activate(context: vscode.ExtensionContext) {
 	//opens Visualizer with log file (right click on json file)
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.rightClickLogFile', async (fileUri: vscode.Uri, tree?: string) => {
-			basename = path.posix.basename(fileUri.path);
-			fileContent = fs.readFileSync(fileUri.fsPath, 'utf8').toString();
-
+			// basename = path.posix.basename(fileUri.path);
+			// fileContent = fs.readFileSync(fileUri.fsPath, 'utf8').toString();
+			// const vis = await Visualizer.createOrShow(context.extensionPath);
 			reactPanel = await ReactPanel.createOrShow(context.extensionPath, basename);
 
 			if (reactPanel && basename && fileContent) {
@@ -69,6 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}, 1000);
 			}
 			updateReactPanel(reactPanel);
+			// vis?.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
 		})
 	);
 
@@ -194,8 +191,6 @@ export function activate(context: vscode.ExtensionContext) {
 	//set a .java or .class file as chain
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.setChain', async (fileUri: vscode.Uri) => {
-			const chainDir = path.join(context.extensionPath, 'prototype', 'chain');
-			console.log(fileUri);
 			//either open file explorer
 			if (!fileUri) {
 				vscode.window.showOpenDialog({
@@ -223,10 +218,11 @@ export function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 
-				if(await Prototype.compileJavaFile(context.extensionPath, fileUri.fsPath)){
-					chain = path.join(chainDir, path.basename(fileUri.fsPath));
+				const compiledPath = Prototype.getCompiledFromJava(fileUri.fsPath);
+				if (compiledPath){
+					chain = compiledPath;	
 					await configuration.update('prototype.chainLocation', chain, false);
-					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.basename(fileUri.fsPath));
+					vscode.window.showInformationMessage('Current chain updated to:', path.basename(fileUri.fsPath));
 				}
 			
 			} else if (fileUri.fsPath.includes('.class')){
@@ -234,6 +230,20 @@ export function activate(context: vscode.ExtensionContext) {
 				await configuration.update('prototype.chainLocation', chain, false);
 				vscode.window.showInformationMessage('Current chain updated to:', path.basename(fileUri.fsPath));
 			
+			}
+		})
+	);
+
+	//compiles a .java file and sets it as Chain
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.compileAndSetChain', async (fileUri: vscode.Uri) => {
+			if(fileUri){
+				console.log(fileUri);
+				if (await Prototype.compileJavaFile()) {
+					chain = Prototype.getCompiledFromJava(fileUri.fsPath);
+					await configuration.update('prototype.chainLocation', chain, false);
+					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.basename(fileUri.fsPath));
+				}
 			}
 		})
 	);
@@ -288,41 +298,17 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		})
 	);
-		
-	//connect to visualizer via url (locally start visualizer first) (mainly for easier debugging)
-	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.connectToVisLH', () => {
-			reactPanel = ReactPanel.createOrShowLH(context.extensionPath);
-			updateReactPanel(reactPanel);
-		})
-	);
 
-	//testing
+	//command for testing
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.sendMessage', () => {
-			let activeTerminal = vscode.window.activeTerminal;
-			if (!activeTerminal) {
-				activeTerminal = vscode.window.createTerminal();
-			}
-			activeTerminal.show();
-			activeTerminal.sendText('hello');
-			//reactPanel?.sendMessage("test", "heeeeelllo");
-		})
-	);
+		vscode.commands.registerCommand('aldesco-extension.testing', async () => {
+			// const vis = await Visualizer.createOrShow(context.extensionPath);
 
-	//connect to visualizer server
-	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.connectToServer', () =>{
-			const panel = vscode.window.createWebviewPanel('visualizer', 'Server', vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true});
-			panel.webview.html = getWebviewHtml(port);
-		})
-	);
+			// const testFileName = 'ast-prototype-findQuicksort__--2023-04-17-10-23-062054843765167940335-vis';
+			// const testFilePath = path.join(context.extensionPath, 'prototype', `${testFileName}.json`);
+			// const testFileContent = fs.readFileSync(testFilePath, 'utf8').toString();
 
-	//open Visualizer in Browser
-	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.openVisInBrowser', () => {
-			const url = `http://localhost:${port}`;
-			vscode.env.openExternal(vscode.Uri.parse(url));
+			// vis?.sendMessage('VSC:OpenFile', {name: testFileName, content: testFileContent, tree: '/'});			
 		})
 	);
 
@@ -354,70 +340,6 @@ async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?
 	}, 1000);
 	return reactPanel;
 }
-
-function startServer(cwd: string, port: string){
-	// spawns server process with specified port 
-	const serverProcess = spawn('serve', ['visualizer/dist', '-p', port], {cwd: cwd, shell: true});
-
-	// Optional: Handle server process events and errors
-	serverProcess.stdout.on('data', (data) => {
-		console.log(`Server output: ${data}`);
-	});
-
-	serverProcess.stderr.on('data', (data) => {
-		console.error(`Server error: ${data}`);
-	});
-
-	serverProcess.on('error', (error) => {
-		console.error(`Server process error: ${error.message}`);
-	});
-
-	serverProcess.on('close', (code) => {
-		console.log(`Server process exited with code ${code}`);
-	});
-}
-
-function getWebviewHtml(port: string){
-	return `<!DOCTYPE html>
-			<html lang="en">
-				<head>
-				<meta charset="UTF-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<title>React App</title>
-				<style>
-					html, body {
-					margin: 0;
-					padding: 0;
-					height: 100%;
-					overflow: hidden;
-					background-color: rgb(88, 88, 88);
-    				color: rgb(0, 0, 0);
-					}
-
-					#root {
-					height: 100%;
-					}
-				</style>
-				</head>
-				<body>
-				<div id="root"></div>
-
-				<script>
-					// Add the necessary JavaScript code to load React app from server
-					const rootElement = document.getElementById('root');
-					const reactAppUrl = 'http://localhost:${port}';
-
-					const iframe = document.createElement('iframe');
-					iframe.src = reactAppUrl;
-					iframe.style.width = '100%';
-					iframe.style.height = '100%';
-					iframe.style.border = 'none';
-
-					rootElement.appendChild(iframe);
-				</script>
-				</body>
-				</html>`
-	}
 
 // This method is called when your extension is deactivated
 export function deactivate() { }

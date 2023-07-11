@@ -3,14 +3,16 @@ import { format } from "date-fns";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as os from 'os';
 
 export default class Prototype {
 
     private static readonly _prototypePath = 'prototype/ast-prototype-1.0.0.jar';
-    private static readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
     private static _outputChannel: vscode.OutputChannel;
 
     private static readonly _outputFormat = 'd-MMM-yyyy-HH-mm-ss';
+
+    private static readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
 
     public static visualizeSpoonAST(extensionPath: string, file: string, startLine?: number): Promise<boolean>{
         return new Promise(async (resolve) => {
@@ -41,10 +43,14 @@ export default class Prototype {
                 code === 0 ? resolve(true) : resolve(false);
                 console.log(`child process exited with code ${code}`);
             });
+
+            childProcess.stdout.destroy();
+            childProcess.stderr.destroy();
+
         });
     }
 
-    public static compileJavaFile(extensionPath: string, file: string): Promise<boolean>{
+    public static compileJavaFile(): Promise<boolean>{
         return new Promise<boolean>((resolve) => {
             const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
 
@@ -52,16 +58,26 @@ export default class Prototype {
                 vscode.window.showInformationMessage('No Project found to compile file!');
                 return;
             }
-            console.log('compiling in', wsFolder.uri.fsPath);
-            
-            const childProcess = spawn('gradlew', ['compileJava'], {cwd: wsFolder.uri.fsPath});
 
+            const pre = os.platform() === 'win32' ? '' : './';
+            const command = this.getCommand(wsFolder);
+
+            if(!command){
+                vscode.window.showErrorMessage('Build tool not supported! Only gradle or maven projects can be build.');
+                return;
+            }
+
+            console.log(`${pre}${command[0]} ${command[1]}`)
+            const childProcess = spawn(`${pre}${command[0]}`, [command[1]], { cwd: wsFolder.uri.fsPath, shell: true });
+            
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
-                vscode.window.showInformationMessage(`Compiled successfully: ${data}`);
+                console.log(`stdout: ${data}`);
+                //vscode.window.showInformationMessage(`Compiled successfully: ${data}`);
             });
 
             childProcess.stderr.on('data', (data) => {
+                console.log(`stderr: ${data}`);
                 vscode.window.showErrorMessage(`File couldn't be compiled:\n ${data}`);
                 resolve(false);
             });
@@ -70,6 +86,10 @@ export default class Prototype {
                 code === 0 ? resolve(true) : resolve(false);
                 console.log(`child process exited with code ${code}`);
             });
+
+            childProcess.stdout.destroy();
+            childProcess.stderr.destroy();
+
         });
     }
 
@@ -87,7 +107,6 @@ export default class Prototype {
 
             //from where the command is run and the output is being placed
             const outputFolder = await this.createOrGetOutputFolder(extensionPath);
-            console.log(outputFolder);
 
             const args = []; 
             args.push('--chain');
@@ -109,6 +128,7 @@ export default class Prototype {
     
             childProcess.stderr.on('data', (data) => {
                 console.error(`stderr: ${data}`);
+                vscode.window.showErrorMessage(`Error while trying to match Folder: ${data}`);
                 resolve(false);
             });
     
@@ -116,9 +136,13 @@ export default class Prototype {
                 code === 0 ? resolve(true) : resolve(false);
                 console.log(`child process exited with code ${code}`);
             });
+
+            childProcess.stdout.destroy();
+            childProcess.stderr.destroy();
         })
     }
 
+    //returns the outupt channel where the matching results are displayed
     private static createOrShowOutputChannel(): vscode.OutputChannel{
         if(this._outputChannel){
             this._outputChannel.show();
@@ -129,6 +153,7 @@ export default class Prototype {
         return this._outputChannel;
     }
 
+    //creates or returns the output folder containing any output the extension produces
     private static async createOrGetOutputFolder(extensionPath: string): Promise<string>{
         const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
         let outputPath: string;
@@ -151,5 +176,94 @@ export default class Prototype {
             return path.join(extensionPath, 'prototype');
         }
     }
+    
+    //returns the correct command depending on building tool in [0]
+    //and the correct argument in [1]
+    private static getCommand(wsFolder: vscode.WorkspaceFolder): string[]{
+        const folder = fs.readdirSync(wsFolder.uri.fsPath);
+        const command: string[] = [];
+        if(folder.includes('gradlew')){
+            command[0] = 'gradlew';
+            command[1] = 'compileJava';
+            return command;
+        }
+
+        if (folder.includes('build.gradle')) {
+            command[0] = 'gradle';
+            command[1] = 'compileJava';
+            return command;
+        }
+
+        if (folder.includes('pom.xml')) {
+            command[0] = 'mvn';
+            command[1] = 'compile';
+            return command;
+        }
+        return [];
+    }
+
+    //searches for a .class file from a .java file name
+    public static getCompiledFromJava(notCompiledPath: string): string {
+        const wsFolder = vscode.workspace.workspaceFolders?.[0];
+        const projectDirPath = wsFolder!.uri.fsPath;
+
+        const projectBuildPath = this.getBuildPath(projectDirPath);
+
+        if(!projectBuildPath){
+            vscode.window.showInformationMessage('The build folder doesn\'t exist or could not be found! Check the documentation for more Info');
+            return '';
+        }
+
+        const javaFileContents = fs.readFileSync(notCompiledPath, 'utf8');
+
+        // Determine the Java file name without the extension
+        const javaFileName = path.basename(notCompiledPath, path.extname(notCompiledPath));
+        
+        // Extract the package declaration from the Java file
+        const packageDeclaration = javaFileContents.match(/package\s+([\w.]+)\s*;/);
+
+        if(!packageDeclaration){
+            return path.join(projectBuildPath, `${javaFileName}.class`);
+        }
+
+        const packageName = packageDeclaration[1];
+
+        // Construct the package directory path based on the package name
+        const packagePath = packageName.replace(/\./g, '/');
+
+        // Construct the path of the compiled .class file
+        const compiledClassFilePath = path.join(projectBuildPath, packagePath, `${javaFileName}.class`);
+
+        // Check if the compiled .class file exists
+        if (!fs.existsSync(compiledClassFilePath)) {
+            vscode.window.showWarningMessage('Compiled file could not be found!');
+            return '';
+        }
+ 
+        return compiledClassFilePath;
+    }
+
+    //returns the build path of the project if it exists
+    private static getBuildPath(projectDirectory: string): string | null {
+        const givenBuildPath = this._configuration.get('prototype.sourceSetBuildLocation') as string;
+
+        if(givenBuildPath && fs.existsSync(givenBuildPath)){
+            return givenBuildPath;
+        }
+
+        const gradleBuildPath = path.join(projectDirectory, 'build', 'classes', 'java', 'main');
+        const mavenBuildPath = path.join(projectDirectory, 'target', 'classes');
+
+        // Check if Gradle build path exists
+        if (fs.existsSync(gradleBuildPath)) {
+            return gradleBuildPath;
+        }
+
+        // Check if Maven build path exists
+        if (fs.existsSync(mavenBuildPath)) {
+            return mavenBuildPath;
+        }
+    return null;
+}
 
 }
