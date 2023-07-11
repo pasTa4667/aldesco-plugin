@@ -24,7 +24,7 @@ All features can be accessed via the `Command Palette` (Ctrl + Shift + P). Make 
 
 **5. Visualize Spoon AST**: Open a file to be visualized and either run the command in the `Command Palette` to visualize the entire file or right-click a line of a method or element to visualize the Spoon AST of the selected element.
 
-**6. Set a Chain and Match Folder**: A Chain can be set by either right-clicking a CLASS File in the VS Code Explorer or by running the command in the `Command Palette` and choosing a CLASS File in the File Explorer. The Chain can also be set by directly by providing the absolute path of a Chain inside the aldesco-extension [Settings](#settings). To view the current Chain, run the **Show current Chain** command in the `Command Palette`. Lastly, right-click or select a folder with the **Match Folder with Chain** command and match the folder with the currently selected Chain.
+**6. Set a Chain and Match Folder**: A Chain can be set by either right-clicking a CLASS File in the VS Code Explorer or by running the command in the `Command Palette` and choosing a CLASS File in the File Explorer. Additionally, a JAVA File can be right clicked automatically compiled and set as Chain or set as Chain without comiling. The Chain can also be set by directly by providing the absolute path of a Chain inside the aldesco-extension [Settings](#settings). To view the current Chain, run the **Show current Chain** command in the `Command Palette`. Lastly, right-click or select a folder with the **Match Folder with Chain** command and match the folder with the currently selected Chain.
 
 ![Set Chain and Match Folder](media/match_feature.mp4)
 
@@ -35,21 +35,23 @@ The most important commands have been described above. Here is a list of all the
 2. **Visualizer: Open Log File in Visualizer**
 3. **Visualizer: Open Most Recent Log File in Visualizer**
 4. **Visualizer: Visualize Spoon AST**
-5. **Visualizer: Set Chain**
-6. **Visualizer: Show current Chain**
-7. **Visualizer: Match Folder with Chain**
-8. **Visualizer: Duplicate Visualizer**
+5. **Visualizer: Set as Chain**
+6. **Visualizer: Compile and set as Chain**
+7. **Visualizer: Show current Chain**
+8. **Visualizer: Match Folder with Chain**
+9. **Visualizer: Duplicate Visualizer**
 
 <Requirements>
 
 ## Settings
 
-Make sure you have set the paths required in the Extension settings.
-
-- `aldesco-extension.prototype.aldescoProjectDirectory`: Sets the location of the aldesco-prototype project directory (absolute path).
-- `aldesco-extension.prototype.chainLocation`: Sets the location of the Chain used for matching (absolute path). This does not have to be set manually and can be accessed via commands.
+Most of the time setting the paths manually is not necessary and can be done through commands or are set automatically by the extension.
 
 > A reload is required after changing settings! 
+
+- `aldesco-extension.prototype.sourceSetBuildLocation`: Sets the location of the Source Set within the Build Folder (absolute Path). For example, for gradle the location path should look like this 'D:\User\MyGradleProject\build\classes\java\main' or for maven 'D:\User\MyMavenProject\target\classes'. You only have to set this if you don't use the standard maven or gradle build or the extension can not find your build path automatically (Error: The build folder doesn't exist or could not be found!). 
+- `aldesco-extension.prototype.chainLocation`: Sets the location of the Chain used for matching (absolute path). This does not have to be set manually and can be accessed via commands.
+
 
 ## Known Issues
 
