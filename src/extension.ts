@@ -3,9 +3,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import ReactPanel from './reactPanel';
 import Prototype from './prototype';
 import {TreeViewProvider} from './treeViewProvider';
+import Visualizer from './visualizer';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -24,48 +24,46 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	const configuration = vscode.workspace.getConfiguration('aldesco-extension');
-	// The commands have been defined in the package.json file
-	// The commandId parameter must match the command field in package.json
-	//get active editor and enable/disable visualizeSpoonAST command
-	
+
+	//updating ref for commands to show/hide
 	const activeEditor = vscode.window.activeTextEditor;
 	updateIsEditorJava(activeEditor);
-
-	let reactPanel: ReactPanel | undefined;
+	
+	let visualizer: Visualizer | undefined;
 	let basename: string;
 	let fileContent: string;
-
+	
 	//current chain for prototype matching
-	let chain: string;
-
+	let chain = configuration.get('prototype.chainLocation') as string;
+	
+	
+	// The commandId parameter must match the command field in package.json
+	// The commands have been defined in the package.json file
+	
 	//Opens Visualizer without log File
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.visualizer', async () => {
-			reactPanel = await ReactPanel.createOrShow(context.extensionPath);
-			updateReactPanel(reactPanel);
+			visualizer = await Visualizer.createOrShow(context.extensionPath);
+			updateVisualizerContext(visualizer);
 		})
 	);
 
 	//opens Visualizer with log file (right click on json file)
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.rightClickLogFile', async (fileUri: vscode.Uri, tree?: string) => {
-			// basename = path.posix.basename(fileUri.path);
-			// fileContent = fs.readFileSync(fileUri.fsPath, 'utf8').toString();
-			// const vis = await Visualizer.createOrShow(context.extensionPath);
-			reactPanel = await ReactPanel.createOrShow(context.extensionPath, basename);
+			basename = path.posix.basename(fileUri.path);
+			fileContent = fs.readFileSync(fileUri.fsPath, 'utf8').toString();
+			
+			visualizer = await Visualizer.createOrShow(context.extensionPath, basename);
 
-			if (reactPanel && basename && fileContent) {
+			if (visualizer && basename && fileContent) {
 				if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
 					tree = '/';
 				}
-				console.log(basename);
-				//really make sure the message is only send when the reactPanel is ready
-				setTimeout(() => {
-					reactPanel?.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
-				}, 1000);
+				await visualizer.sendMessageWithAck('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
 			}
-			updateReactPanel(reactPanel);
-			// vis?.sendMessage('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
+			updateVisualizerContext(visualizer);
+
 		})
 	);
 
@@ -84,17 +82,17 @@ export function activate(context: vscode.ExtensionContext) {
 				}).then(fileUris => {
 					if (fileUris && fileUris[0]) {
 						const fileUri = fileUris[0];
-						readFileOpenVis(fileUri, context.extensionPath).then((rp) => {
-							reactPanel = rp;
-							updateReactPanel(reactPanel);
+						readFileOpenVis(fileUri, context.extensionPath).then((vis) => {
+							visualizer = vis;
+							updateVisualizerContext(visualizer);
 						});
 					}
 				});
 			} else {
 				const fileUri = activeEditor.document.uri;
-				readFileOpenVis(fileUri, context.extensionPath).then((rp) => {
-					reactPanel = rp;
-					updateReactPanel(reactPanel);
+				readFileOpenVis(fileUri, context.extensionPath).then((vis) => {
+					visualizer = vis;
+					updateVisualizerContext(visualizer);
 				});
 			}
 		})
@@ -102,10 +100,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 	//for duplicating the last used webview
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.duplicateVis', () => {
-			if (reactPanel) {
-				reactPanel.duplicateActive(context.extensionPath);
-				reactPanel.changeTitle(basename);
+		vscode.commands.registerCommand('aldesco-extension.duplicateVis', async () => {
+			if (visualizer) {
+				visualizer.duplicateActive(context.extensionPath, basename);
 			} else {
 				vscode.window.showInformationMessage('No Visualizer Active to Duplicate');
 			}
@@ -167,9 +164,9 @@ export function activate(context: vscode.ExtensionContext) {
 					if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
 						tree = '/';
 					}
-					readFileOpenVis(vscode.Uri.file(latestFilePath), context.extensionPath, tree).then((rp) => {
-						reactPanel = rp;
-						updateReactPanel(reactPanel);
+					readFileOpenVis(vscode.Uri.file(latestFilePath), context.extensionPath, tree).then((vis) => {
+						visualizer = vis;
+						updateVisualizerContext(visualizer);
 					});
 				}
 			}
@@ -255,6 +252,8 @@ export function activate(context: vscode.ExtensionContext) {
 			if(activeEditor){
 				const fileUri = activeEditor.document.uri;
 				const startLine = activeEditor.selection.start;
+				console.log("startLine:", startLine.line);
+
 				//startLine + 1 since vscode gives us the line before the selected line 
 				if (await Prototype.visualizeSpoonAST(context.extensionPath, fileUri.fsPath, startLine && args.length > 0 ? startLine.line + 1: undefined)){
 					vscode.commands.executeCommand('aldesco-extension.openMostRecentLogFile', '/ASTView');
@@ -302,13 +301,11 @@ export function activate(context: vscode.ExtensionContext) {
 	//command for testing
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.testing', async () => {
-			// const vis = await Visualizer.createOrShow(context.extensionPath);
-
-			// const testFileName = 'ast-prototype-findQuicksort__--2023-04-17-10-23-062054843765167940335-vis';
-			// const testFilePath = path.join(context.extensionPath, 'prototype', `${testFileName}.json`);
-			// const testFileContent = fs.readFileSync(testFilePath, 'utf8').toString();
-
-			// vis?.sendMessage('VSC:OpenFile', {name: testFileName, content: testFileContent, tree: '/'});			
+			if (visualizer) {
+				visualizer = await visualizer.duplicateActive(context.extensionPath, 'hello');
+			} else {
+				vscode.window.showInformationMessage('No Visualizer Active to Duplicate');
+			}	
 		})
 	);
 
@@ -326,19 +323,20 @@ function updateIsEditorJava(editor: vscode.TextEditor | undefined){
 	}
 }
 
-function updateReactPanel(reactPanel: ReactPanel | undefined) {
-	vscode.commands.executeCommand('setContext', 'reactPanel', reactPanel);
-}
-
-async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?: string): Promise<ReactPanel | undefined> {
+async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?: string): Promise<Visualizer | undefined> {
 	const content = await vscode.workspace.fs.readFile(fileUri);
 	const jsonContent = content.toString();
-	const reactPanel = await ReactPanel.createOrShow(extensionPath, fileUri.fsPath);
-	setTimeout(() => {
-		reactPanel?.sendMessage('VSC:OpenFile', { name: fileUri.fsPath, content: jsonContent, tree: tree? tree : '/' });
-		console.log('opened');
-	}, 1000);
-	return reactPanel;
+	const basename = path.basename(fileUri.fsPath);
+	const visualizer = await Visualizer.createOrShow(extensionPath, basename);
+	
+	if(visualizer){
+		await visualizer.sendMessageWithAck('VSC:OpenFile', { name: basename, content: jsonContent, tree: tree ? tree : '/' });
+	}
+	return visualizer;
+}
+
+function updateVisualizerContext(vis: Visualizer | undefined) {
+	vscode.commands.executeCommand('setContext', 'visualizer', vis);
 }
 
 // This method is called when your extension is deactivated

@@ -98,38 +98,26 @@
       "commandPalette": [
         {
           "command": "aldesco-extension.openAST",
-          "title": "Open AST",
-          "category": "Visualizer",
           "when": "false"
         },
         {
           "command": "aldesco-extension.openPattern",
-          "title": "Open Pattern",
-          "category": "Visualizer",
           "when": "false"
         },
         {
           "command": "aldesco-extension.rightClickLogFile",
-          "title": "Open in Visualizer",
-          "category": "Visualizer",
           "when": "false"
         },
         {
           "command": "aldesco-extension.duplicateVis",
-          "title": "Duplicate",
-          "category": "Visualizer",
-          "when": "reactPanel"
+          "when": "visualizer"
         },
         {
           "command": "aldesco-extension.visualizeSpoonAST",
-          "title": "Visualize Spoon AST",
-          "category": "Visualizer",
           "when": "isEditorJava"
         },
         {
           "command": "aldesco-extension.compileAndSetChain",
-          "title": "Compile and set as Chain",
-          "category": "Visualizer",
           "when": "false"
         }
       ],

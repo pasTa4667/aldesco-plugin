@@ -44,9 +44,6 @@ export default class Prototype {
                 console.log(`child process exited with code ${code}`);
             });
 
-            childProcess.stdout.destroy();
-            childProcess.stderr.destroy();
-
         });
     }
 
@@ -87,9 +84,6 @@ export default class Prototype {
                 console.log(`child process exited with code ${code}`);
             });
 
-            childProcess.stdout.destroy();
-            childProcess.stderr.destroy();
-
         });
     }
 
@@ -108,13 +102,7 @@ export default class Prototype {
             //from where the command is run and the output is being placed
             const outputFolder = await this.createOrGetOutputFolder(extensionPath);
 
-            const args = []; 
-            args.push('--chain');
-            args.push(chainPath);
-            args.push('--input');
-            args.push(folderPath);
-            args.push('--output');
-            args.push(outputName);
+            const args = ['--chain', chainPath, '--input', folderPath, '--output', outputName]; 
 
             const childProcess = spawn('java', ['-jar', absPrototypePath, ...args], { cwd: outputFolder });
 
@@ -122,7 +110,7 @@ export default class Prototype {
   
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
-                const parsed = (data.toString() as string).replace('', '->');
+                const parsed = (data.toString() as string).replace(/\|\/g, '->');
                 output.append(parsed);
             });
     
@@ -137,8 +125,6 @@ export default class Prototype {
                 console.log(`child process exited with code ${code}`);
             });
 
-            childProcess.stdout.destroy();
-            childProcess.stderr.destroy();
         })
     }
 
