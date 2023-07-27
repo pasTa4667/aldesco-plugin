@@ -26,8 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const configuration = vscode.workspace.getConfiguration('aldesco-extension');
 
 	//updating ref for commands to show/hide
-	const activeEditor = vscode.window.activeTextEditor;
-	updateIsEditorJava(activeEditor);
+	updateIsEditorJava(getActiveEditor());
 	
 	let visualizer: Visualizer | undefined;
 	let basename: string;
@@ -70,6 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
 	//open Log file in Visualizer
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.openLogFileInVis', () => {
+			const activeEditor = getActiveEditor();
 			if (!activeEditor || !activeEditor.document.fileName.includes('vis')) {
 				//TODO: only be able to select log files
 				vscode.window.showOpenDialog({
@@ -248,13 +248,13 @@ export function activate(context: vscode.ExtensionContext) {
 	//start prototype spoon ast visualizer with method or file
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.visualizeSpoonAST', async (...args) => {
-
+			const activeEditor = getActiveEditor();
 			if(activeEditor){
 				const fileUri = activeEditor.document.uri;
 				const startLine = activeEditor.selection.start;
 				console.log("startLine:", startLine.line);
 
-				//startLine + 1 since vscode gives us the line before the selected line 
+				//startLine + 1 since vscode internally starts counting at 0
 				if (await Prototype.visualizeSpoonAST(context.extensionPath, fileUri.fsPath, startLine && args.length > 0 ? startLine.line + 1: undefined)){
 					vscode.commands.executeCommand('aldesco-extension.openMostRecentLogFile', '/ASTView');
 				}				
@@ -337,6 +337,10 @@ async function readFileOpenVis(fileUri: vscode.Uri, extensionPath: string, tree?
 
 function updateVisualizerContext(vis: Visualizer | undefined) {
 	vscode.commands.executeCommand('setContext', 'visualizer', vis);
+}
+
+function getActiveEditor(): vscode.TextEditor | undefined {
+	return vscode.window.activeTextEditor;
 }
 
 // This method is called when your extension is deactivated
