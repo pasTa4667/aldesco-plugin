@@ -47,12 +47,12 @@ export default class Prototype {
         });
     }
 
-    public static compileJavaFile(): Promise<boolean>{
+    public static compileAllFiles(): Promise<boolean>{
         return new Promise<boolean>((resolve) => {
             const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
 
             if(!wsFolder){
-                vscode.window.showInformationMessage('No Project found to compile file!');
+                vscode.window.showInformationMessage('No Project found to compile file in!');
                 return;
             }
 
@@ -64,7 +64,6 @@ export default class Prototype {
                 return;
             }
 
-            console.log(`${pre}${command[0]} ${command[1]}`)
             const childProcess = spawn(`${pre}${command[0]}`, [command[1]], { cwd: wsFolder.uri.fsPath, shell: true });
             
             // Handle events and output from the child process
@@ -85,6 +84,44 @@ export default class Prototype {
             });
 
         });
+    }
+
+    public static compileSingleFile(extensionPath: string, filePath: vscode.Uri): Promise<boolean>{
+        return new Promise<boolean>((resolve) => {
+
+            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            const projectDirPath = wsFolder!.uri.fsPath;
+
+            if(!projectDirPath){
+                vscode.window.showWarningMessage('No Project found to compile file in!');
+                return;
+            }
+
+            const buildPath = this.getBuildPath(projectDirPath);
+            const prototypeJarPath = path.join('prototpye', 'ast-prototype-1.0.0-jar'); 
+
+            //javac adds packages to the target directory for use
+            const args = ['-cp', `${buildPath};${prototypeJarPath}`, '-d', buildPath, filePath.fsPath];
+    
+            const childProcess = spawn('javac', args, { cwd: projectDirPath });
+    
+            // Handle events and output from the child process
+            childProcess.stdout.on('data', (data) => {
+                console.log(`stdout: ${data}`);
+                //vscode.window.showInformationMessage(`Compiled successfully: ${data}`);
+            });
+    
+            childProcess.stderr.on('data', (data) => {
+                console.log(`stderr: ${data}`);
+                vscode.window.showErrorMessage(`File couldn't be compiled:\n ${data}`);
+                resolve(false);
+            });
+    
+            childProcess.on('close', (code) => {
+                code === 0 ? resolve(true) : resolve(false);
+                console.log(`child process exited with code ${code}`);
+            });
+        })
     }
 
     public static matchFolderWithChain(extensionPath: string, chainPath: string, folderPath: string): Promise<boolean> {     
@@ -188,7 +225,7 @@ export default class Prototype {
         return [];
     }
 
-    //searches for a .class file from a .java file name
+    //searches for a .class file in the build folder from a .java file name in the src folder
     public static getCompiledFromJava(notCompiledPath: string): string {
         const wsFolder = vscode.workspace.workspaceFolders?.[0];
         const projectDirPath = wsFolder!.uri.fsPath;
@@ -230,7 +267,7 @@ export default class Prototype {
     }
 
     //returns the build path of the project if it exists
-    private static getBuildPath(projectDirectory: string): string | null {
+    private static getBuildPath(projectDirectory: string): string {
         const givenBuildPath = this._configuration.get('prototype.sourceSetBuildLocation') as string;
 
         if(givenBuildPath && fs.existsSync(givenBuildPath)){
@@ -249,7 +286,7 @@ export default class Prototype {
         if (fs.existsSync(mavenBuildPath)) {
             return mavenBuildPath;
         }
-    return null;
-}
+        return '';
+    }
 
 }

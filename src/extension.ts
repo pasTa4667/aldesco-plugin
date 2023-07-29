@@ -236,7 +236,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('aldesco-extension.compileAndSetChain', async (fileUri: vscode.Uri) => {
 			if(fileUri){
 				console.log(fileUri);
-				if (await Prototype.compileJavaFile()) {
+				if (await Prototype.compileAllFiles()) {
 					chain = Prototype.getCompiledFromJava(fileUri.fsPath);
 					await configuration.update('prototype.chainLocation', chain, false);
 					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.basename(fileUri.fsPath));

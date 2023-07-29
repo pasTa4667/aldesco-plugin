@@ -9,7 +9,7 @@ suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 
 	test('Get compile file test', () => {
-		const path = 'd:/Felix/Programming/AlDesCo_Git/aldesco_spoo…/pattern_pool/playground/FindAllMethods2.java';
+		const path = 'd:/Felix/Programming/AlDesCo_Git/aldesco_spoon_prototype/pattern_pool/playground/FindAllMethods2.java';
 		
 		const chain = Prototype.getCompiledFromJava(path);
 		console.log(chain)
