@@ -231,13 +231,27 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	//compiles a .java file and sets it as Chain
+	//compiles all project files and sets the selected as Chain
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.compileAndSetChain', async (fileUri: vscode.Uri) => {
+		vscode.commands.registerCommand('aldesco-extension.compileAllAndSetChain', async (fileUri: vscode.Uri) => {
 			if(fileUri){
-				console.log(fileUri);
-				if (await Prototype.compileAllFiles()) {
-					chain = Prototype.getCompiledFromJava(fileUri.fsPath);
+				const compiled = await Prototype.compileAllFiles(fileUri.fsPath);
+				if (compiled) {
+					chain = compiled;
+					await configuration.update('prototype.chainLocation', chain, false);
+					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.basename(fileUri.fsPath));
+				}
+			}
+		})
+	);
+
+	//compiles one java file and sets it as Chain
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.compileSingleAndSetChain', async (fileUri: vscode.Uri) => {
+			if (fileUri) {
+				const compiled = await Prototype.compileSingleFile(context.extensionPath, fileUri.fsPath);
+				if (compiled) {
+					chain = compiled;
 					await configuration.update('prototype.chainLocation', chain, false);
 					vscode.window.showInformationMessage('File compiled and current chain updated to:', path.basename(fileUri.fsPath));
 				}
@@ -252,7 +266,6 @@ export function activate(context: vscode.ExtensionContext) {
 			if(activeEditor){
 				const fileUri = activeEditor.document.uri;
 				const startLine = activeEditor.selection.start;
-				console.log("startLine:", startLine.line);
 
 				//startLine + 1 since vscode internally starts counting at 0
 				if (await Prototype.visualizeSpoonAST(context.extensionPath, fileUri.fsPath, startLine && args.length > 0 ? startLine.line + 1: undefined)){

@@ -79,8 +79,13 @@
         "category": "Visualizer"
       },
       {
-        "command": "aldesco-extension.compileAndSetChain",
-        "title": "Compile and set as Chain",
+        "command": "aldesco-extension.compileAllAndSetChain",
+        "title": "Compile all",
+        "category": "Visualizer"
+      },
+      {
+        "command": "aldesco-extension.compileSingleAndSetChain",
+        "title": "Compile single",
         "category": "Visualizer"
       },
       {
@@ -117,7 +122,11 @@
           "when": "isEditorJava"
         },
         {
-          "command": "aldesco-extension.compileAndSetChain",
+          "command": "aldesco-extension.compileAllAndSetChain",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.compileSingleAndSetChain",
           "when": "false"
         }
       ],
@@ -128,13 +137,13 @@
           "group": "navigation"
         },
         {
-          "command": "aldesco-extension.setChain",
-          "when": "resourceFilename =~ /\\.java|\\.class$/",
+          "submenu": "aldesco-extension.setChain",
+          "when": "resourceFilename =~ /\\.java/",
           "group": "navigation"
         },
         {
-          "command": "aldesco-extension.compileAndSetChain",
-          "when": "resourceFilename =~ /\\.java/",
+          "command": "aldesco-extension.setChain",
+          "when": "resourceFilename =~ /\\.class/",
           "group": "navigation"
         },
         {
@@ -152,18 +161,29 @@
       "aldesco-extension.rightClickLogFile": [
         {
           "command": "aldesco-extension.openAST",
-          "category": "Visualizer",
           "group": "aldesco-extension.rightClickLogFile@1"
         },
         {
           "command": "aldesco-extension.openPattern",
-          "category": "Visualizer",
           "group": "aldesco-extension.rightClickLogFile@2"
         },
         {
           "command": "aldesco-extension.rightClickLogFile",
-          "category": "Visualizer",
           "group": "aldesco-extension.rightClickLogFile@3"
+        }
+      ],
+      "aldesco-extension.setChain": [
+        {
+          "command": "aldesco-extension.compileSingleAndSetChain",
+          "group": "aldesco-extension.setChain@1"
+        },
+        {
+          "command": "aldesco-extension.compileAllAndSetChain",
+          "group": "aldesco-extension.setChain@2"
+        },
+        {
+          "command": "aldesco-extension.setChain",
+          "group": "aldesco-extension.setChain@3"
         }
       ]
     },
@@ -171,6 +191,10 @@
       {
         "id": "aldesco-extension.rightClickLogFile",
         "label": "Open in Visualizer"
+      },
+      {
+        "id": "aldesco-extension.setChain",
+        "label": "Set as Chain"
       }
     ],
     "configuration": {

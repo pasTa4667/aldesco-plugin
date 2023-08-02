@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import { format } from "date-fns";
+import * as fileUtils from "./prototype/ptFileUtils";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -12,8 +13,6 @@ export default class Prototype {
 
     private static readonly _outputFormat = 'd-MMM-yyyy-HH-mm-ss';
 
-    private static readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
-
     public static visualizeSpoonAST(extensionPath: string, file: string, startLine?: number): Promise<boolean>{
         return new Promise(async (resolve) => {
             const args = ['--file', file];
@@ -24,7 +23,7 @@ export default class Prototype {
             }
             
             //from where the command is run
-            const outputFolder = await this.createOrGetOutputFolder(extensionPath);
+            const outputFolder = await fileUtils.createOrGetOutputFolder(extensionPath);
             const absPrototypePath = path.join(extensionPath, this._prototypePath);
 
             const childProcess = spawn('java', ['-jar', absPrototypePath, ...args], { cwd: outputFolder});
@@ -47,8 +46,8 @@ export default class Prototype {
         });
     }
 
-    public static compileAllFiles(): Promise<boolean>{
-        return new Promise<boolean>((resolve) => {
+    public static compileAllFiles(filePath: string): Promise<string>{
+        return new Promise<string>((resolve) => {
             const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
 
             if(!wsFolder){
@@ -57,7 +56,7 @@ export default class Prototype {
             }
 
             const pre = os.platform() === 'win32' ? '' : './';
-            const command = this.getCommand(wsFolder);
+            const command = fileUtils.getCommand(wsFolder);
 
             if(!command){
                 vscode.window.showErrorMessage('Build tool not supported! Only gradle or maven projects can be build.');
@@ -75,19 +74,19 @@ export default class Prototype {
             childProcess.stderr.on('data', (data) => {
                 console.log(`stderr: ${data}`);
                 vscode.window.showErrorMessage(`File couldn't be compiled:\n ${data}`);
-                resolve(false);
+                resolve('');
             });
 
             childProcess.on('close', (code) => {
-                code === 0 ? resolve(true) : resolve(false);
+                code === 0 ? resolve(fileUtils.getCompiledFromJava(filePath)) : resolve('');
                 console.log(`child process exited with code ${code}`);
             });
 
         });
     }
 
-    public static compileSingleFile(extensionPath: string, filePath: vscode.Uri): Promise<boolean>{
-        return new Promise<boolean>((resolve) => {
+    public static compileSingleFile(extensionPath: string, filePath: string): Promise<string>{
+        return new Promise<string>((resolve) => {
 
             const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
             const projectDirPath = wsFolder!.uri.fsPath;
@@ -97,28 +96,27 @@ export default class Prototype {
                 return;
             }
 
-            const buildPath = this.getBuildPath(projectDirPath);
-            const prototypeJarPath = path.join('prototpye', 'ast-prototype-1.0.0-jar'); 
+            const buildPath = fileUtils.getBuildPath(projectDirPath);
+            const prototypeJarPath = path.join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar'); 
 
             //javac adds packages to the target directory for use
-            const args = ['-cp', `${buildPath};${prototypeJarPath}`, '-d', buildPath, filePath.fsPath];
-    
+            const args = ['-cp', `${buildPath};${prototypeJarPath}`, '-d', buildPath, filePath];
+
             const childProcess = spawn('javac', args, { cwd: projectDirPath });
     
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
-                console.log(`stdout: ${data}`);
-                //vscode.window.showInformationMessage(`Compiled successfully: ${data}`);
+                //console.log(`stdout: ${data}`);
             });
     
             childProcess.stderr.on('data', (data) => {
-                console.log(`stderr: ${data}`);
-                vscode.window.showErrorMessage(`File couldn't be compiled:\n ${data}`);
-                resolve(false);
+                //console.log(`stderr: ${data}`);
+                vscode.window.showErrorMessage(`File couldn't be compiled:\n Not all imports are supported in this command, try compile all`);
+                resolve('');
             });
     
             childProcess.on('close', (code) => {
-                code === 0 ? resolve(true) : resolve(false);
+                code === 0 ? resolve(fileUtils.getCompiledFromJava(filePath)) : resolve('');
                 console.log(`child process exited with code ${code}`);
             });
         })
@@ -137,7 +135,7 @@ export default class Prototype {
             const outputName = `${folderName}-${formattedDate}.json`;
 
             //from where the command is run and the output is being placed
-            const outputFolder = await this.createOrGetOutputFolder(extensionPath);
+            const outputFolder = await fileUtils.createOrGetOutputFolder(extensionPath);
 
             const args = ['--chain', chainPath, '--input', folderPath, '--output', outputName]; 
 
@@ -147,7 +145,8 @@ export default class Prototype {
   
             // Handle events and output from the child process
             childProcess.stdout.on('data', (data) => {
-                const parsed = (data.toString() as string).replace(/\|\/g, '->');
+                //const parsed = (data.toString() as string).replace(/\|\/g, '->');
+                const parsed = (data.toString() as string);
                 output.append(parsed);
             });
     
@@ -176,61 +175,13 @@ export default class Prototype {
         return this._outputChannel;
     }
 
-    //creates or returns the output folder containing any output the extension produces
-    private static async createOrGetOutputFolder(extensionPath: string): Promise<string>{
-        const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
-        let outputPath: string;
-        if(wsFolder){
-            outputPath = path.join(wsFolder.uri.fsPath, 'aldesco-output');
-            
-            if(fs.existsSync(outputPath)){
-                return outputPath;
-            }
-            
-            try {
-                await fs.promises.mkdir(outputPath, { recursive: true });
-                console.log(`Directory ${outputPath} created`);
-                return outputPath;
-            } catch (err) {
-                console.error('Failed to create output directory:', err);
-                return path.join(extensionPath, 'prototype');
-            }
-        }else{
-            return path.join(extensionPath, 'prototype');
-        }
-    }
-    
-    //returns the correct command depending on building tool in [0]
-    //and the correct argument in [1]
-    private static getCommand(wsFolder: vscode.WorkspaceFolder): string[]{
-        const folder = fs.readdirSync(wsFolder.uri.fsPath);
-        const command: string[] = [];
-        if(folder.includes('gradlew')){
-            command[0] = 'gradlew';
-            command[1] = 'compileJava';
-            return command;
-        }
-
-        if (folder.includes('build.gradle')) {
-            command[0] = 'gradle';
-            command[1] = 'compileJava';
-            return command;
-        }
-
-        if (folder.includes('pom.xml')) {
-            command[0] = 'mvn';
-            command[1] = 'compile';
-            return command;
-        }
-        return [];
-    }
 
     //searches for a .class file in the build folder from a .java file name in the src folder
     public static getCompiledFromJava(notCompiledPath: string): string {
         const wsFolder = vscode.workspace.workspaceFolders?.[0];
         const projectDirPath = wsFolder!.uri.fsPath;
 
-        const projectBuildPath = this.getBuildPath(projectDirPath);
+        const projectBuildPath = fileUtils.getBuildPath(projectDirPath);
 
         if(!projectBuildPath){
             vscode.window.showInformationMessage('The build folder doesn\'t exist or could not be found! Check the documentation for more Info');
@@ -266,27 +217,23 @@ export default class Prototype {
         return compiledClassFilePath;
     }
 
-    //returns the build path of the project if it exists
-    private static getBuildPath(projectDirectory: string): string {
-        const givenBuildPath = this._configuration.get('prototype.sourceSetBuildLocation') as string;
 
-        if(givenBuildPath && fs.existsSync(givenBuildPath)){
-            return givenBuildPath;
-        }
+    private static spawnChildProcess(command: string, cwd: string, shell: boolean, ...args: string[]){
+        const childProcess = spawn(command, args, {cwd: cwd, shell: shell});
 
-        const gradleBuildPath = path.join(projectDirectory, 'build', 'classes', 'java', 'main');
-        const mavenBuildPath = path.join(projectDirectory, 'target', 'classes');
+        // Handle events and output from the child process
+        childProcess.stdout.on('data', (data) => {
+            console.log(`stdout: ${data}`);
+        });
 
-        // Check if Gradle build path exists
-        if (fs.existsSync(gradleBuildPath)) {
-            return gradleBuildPath;
-        }
+        childProcess.stderr.on('data', (data) => {
+            console.log(`stderr: ${data}`);
+        });
 
-        // Check if Maven build path exists
-        if (fs.existsSync(mavenBuildPath)) {
-            return mavenBuildPath;
-        }
-        return '';
+        childProcess.on('close', (code) => {
+            //code === 0 ? resolve(true) : resolve(false);
+            console.log(`child process exited with code ${code}`);
+        });
     }
 
 }
