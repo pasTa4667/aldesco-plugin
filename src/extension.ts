@@ -1,32 +1,24 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import Prototype from './prototype';
-import {TreeViewProvider} from './treeViewProvider';
+import Prototype from './prototype/ptCommands';
+import {initiateTreeView} from './treeViewProvider';
 import Visualizer from './visualizer';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('extension "aldesco-extension" is now active!');
 
-	const rootPath =
-		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
-			? vscode.workspace.workspaceFolders[0].uri.fsPath
-			: undefined;
-	vscode.window.createTreeView('aldesco-extension.outputView', {
-		treeDataProvider: new TreeViewProvider(rootPath!)
-	});
-
 	const configuration = vscode.workspace.getConfiguration('aldesco-extension');
-
+	
 	//updating ref for commands to show/hide
 	updateIsEditorJava(getActiveEditor());
+
+	//adding output folder tree view to explorer
+	initiateTreeView();
 	
 	let visualizer: Visualizer | undefined;
 	let basename: string;
@@ -34,7 +26,6 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	//current chain for prototype matching
 	let chain = configuration.get('prototype.chainLocation') as string;
-	
 	
 	// The commandId parameter must match the command field in package.json
 	// The commands have been defined in the package.json file
@@ -62,7 +53,6 @@ export function activate(context: vscode.ExtensionContext) {
 				await visualizer.sendMessageWithAck('VSC:OpenFile', { name: basename, content: fileContent, tree: tree });
 			}
 			updateVisualizerContext(visualizer);
-
 		})
 	);
 
@@ -215,7 +205,7 @@ export function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 
-				const compiledPath = Prototype.getCompiledFromJava(fileUri.fsPath);
+				const compiledPath = await Prototype.getCompiledFromJava(fileUri.fsPath);
 				if (compiledPath){
 					chain = compiledPath;	
 					await configuration.update('prototype.chainLocation', chain, false);
@@ -259,18 +249,32 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 	
-	//start prototype spoon ast visualizer with method or file
+	//start prototype spoon ast visualizer with selected content
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.visualizeSpoonAST', async (...args) => {
+		vscode.commands.registerCommand('aldesco-extension.visualizeSpoonAST', async () => {
 			const activeEditor = getActiveEditor();
 			if(activeEditor){
 				const fileUri = activeEditor.document.uri;
-				const startLine = activeEditor.selection.start;
+				const selection = activeEditor.document.getText(activeEditor.selection);
+				
+				if(!selection){
+					vscode.window.showInformationMessage('Nothing selected.');
+					return
+				}
+				
+				const endLine = activeEditor.selection.end.line;
+				const fileContent = activeEditor.document.getText();
+				const textBeforeSelection = fileContent.split('\n').slice(0, endLine + 1).join('\n');
+				const sourceStart = textBeforeSelection.lastIndexOf(selection);
+				const sourceEnd = sourceStart + selection.length - 1;
 
-				//startLine + 1 since vscode internally starts counting at 0
-				if (await Prototype.visualizeSpoonAST(context.extensionPath, fileUri.fsPath, startLine && args.length > 0 ? startLine.line + 1: undefined)){
-					vscode.commands.executeCommand('aldesco-extension.openMostRecentLogFile', '/ASTView');
-				}				
+				await Prototype.visualizeSpoonAST(context.extensionPath, fileUri.fsPath, sourceStart, sourceEnd)
+					.then(() => {
+						vscode.commands.executeCommand('aldesco-extension.openMostRecentLogFile', '/ASTView');
+					})
+					.catch(() => {
+						vscode.window.showErrorMessage('Visualizer File could not be generated.');
+					})	
 			}
 		})
 	);
@@ -314,11 +318,12 @@ export function activate(context: vscode.ExtensionContext) {
 	//command for testing
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.testing', async () => {
-			if (visualizer) {
-				visualizer = await visualizer.duplicateActive(context.extensionPath, 'hello');
-			} else {
-				vscode.window.showInformationMessage('No Visualizer Active to Duplicate');
-			}	
+			const editor = getActiveEditor();
+			const selection = editor?.document.getText(editor.selection);
+			const fileContent  = editor?.document.getText();
+			const start = fileContent?.indexOf(selection!);
+			console.log(start);
+			console.log(start! + selection!.length);
 		})
 	);
 

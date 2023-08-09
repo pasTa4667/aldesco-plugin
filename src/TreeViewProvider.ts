@@ -75,3 +75,20 @@ class Content extends vscode.TreeItem {
     super(name, collapsibleState);
   }
 }
+
+
+/**
+ * Adds the Output Tree View to the explorer
+ */
+export function initiateTreeView(){
+  const rootPath =
+      vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+        ? vscode.workspace.workspaceFolders[0].uri.fsPath
+        : undefined;
+
+  if(rootPath){
+    vscode.window.createTreeView('aldesco-extension.outputView', {
+    treeDataProvider: new TreeViewProvider(rootPath!)
+  });
+  }
+}
