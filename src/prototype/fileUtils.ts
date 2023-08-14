@@ -12,27 +12,23 @@ const configuration = vscode.workspace.getConfiguration('aldesco-extension');
  * Either creates or returns the existing output Folder. 
  * (Will always return a valid Path to a directory)
  */
-export function createOrGetOutputFolder(extensionPath: string): Promise <string> {
-    return new Promise<string>(async (resolve) => {
-        const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
-        let outputPath: string;
-        if (wsFolder) {
-            outputPath = path.join(wsFolder.uri.fsPath, 'aldesco-output');
+export async function createOrGetOutputFolder(extensionPath: string): Promise<string> {
+    const wsFolder = vscode.workspace.workspaceFolders?.[0];
 
-            if (fs.existsSync(outputPath)) {
-                resolve(outputPath);
-            }
+    if (!wsFolder) {
+        vscode.window.showInformationMessage('Output Folder could not be generated: Output Files location: ' + path.join(extensionPath, 'prototype'));
+        return path.join(extensionPath, 'prototype');
+    }
 
-            try {
-                await fs.promises.mkdir(outputPath, { recursive: true });
-                resolve(outputPath);
-            } catch (err) {
-                resolve(path.join(extensionPath, 'prototype'));
-            }
-        } else {
-            resolve(path.join(extensionPath, 'prototype'));
-        }
-    })
+    const outputPath = path.join(wsFolder.uri.fsPath, 'aldesco-output');
+
+    try {
+        await fs.promises.mkdir(outputPath, { recursive: true });
+        return outputPath;
+    } catch (err) {
+        vscode.window.showInformationMessage('Output Folder could not be generated: Output Files location: ', path.join(extensionPath, 'prototype'));
+        return path.join(extensionPath, 'prototype');
+    }
 }
 
 /**
