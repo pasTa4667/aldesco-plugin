@@ -259,7 +259,7 @@ export function activate(context: vscode.ExtensionContext) {
 				
 				if(!selection){
 					vscode.window.showInformationMessage('Nothing selected.');
-					return
+					return;
 				}
 				
 				const endLine = activeEditor.selection.end.line;
@@ -274,7 +274,7 @@ export function activate(context: vscode.ExtensionContext) {
 					})
 					.catch(() => {
 						vscode.window.showErrorMessage('Visualizer File could not be generated.');
-					})	
+					});
 			}
 		})
 	);
@@ -286,6 +286,7 @@ export function activate(context: vscode.ExtensionContext) {
 			if(!chain){
 				chain = configuration.get('prototype.chainLocation', '');
 			}
+			let folderPath = folder.fsPath;
 
 			if(!folder){
 				vscode.window.showOpenDialog({
@@ -294,20 +295,23 @@ export function activate(context: vscode.ExtensionContext) {
 					canSelectMany: false,
 				}).then(folderUris => {
 					if (folderUris && folderUris[0]) {
-						folder = folderUris[0];	
-						Prototype.matchFolderWithChain(context.extensionPath, chain, folder.fsPath);	
+						folderPath = folderUris[0].fsPath;	
 					}
 				});
-			}else{
-				Prototype.matchFolderWithChain(context.extensionPath, chain, folder.fsPath);	
 			}
+			
+			await Prototype.matchFolderWithChain(context.extensionPath, chain, folder.fsPath)
+				.catch((error) => {
+					vscode.window.showErrorMessage(error);
+				});	
+
 		})
 	);
 
 	//outputs the current chain
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.currentChain', () => {
-			if(chain){
+		if(chain){
 				vscode.window.showInformationMessage('Current Chain is:', path.basename(chain));
 			}else{
 				vscode.window.showInformationMessage('Chain is not set!');
@@ -318,12 +322,9 @@ export function activate(context: vscode.ExtensionContext) {
 	//command for testing
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.testing', async () => {
-			const editor = getActiveEditor();
-			const selection = editor?.document.getText(editor.selection);
-			const fileContent  = editor?.document.getText();
-			const start = fileContent?.indexOf(selection!);
-			console.log(start);
-			console.log(start! + selection!.length);
+			const terminal = vscode.window.createTerminal('Testing');
+			terminal.sendText(`This is \n a test`, false);
+		terminal.show();
 		})
 	);
 

@@ -3,14 +3,12 @@ import { format } from "date-fns";
 import * as spawner from "./spawner";
 import * as fileUtils from "./fileUtils";
 import * as path from 'path';
-import * as vscode from 'vscode';
-import * as os from 'os';
+import { window, workspace } from 'vscode';
+import { platform } from 'os';
 
 export default class Prototype {
 
     private static readonly _prototypePath = 'prototype/ast-prototype-1.0.0.jar';
-    private static _outputChannel: vscode.OutputChannel;
-
     private static readonly _outputFormat = 'd-MMM-yyyy-HH-mm-ss';
     
     public static visualizeSpoonAST(extensionPath: string, file: string, startLine?: number, endLine?: number): Promise<void>{
@@ -38,18 +36,18 @@ export default class Prototype {
 
     public static compileAllFiles(filePath: string): Promise<string>{
         return new Promise<string>(async (resolve) => {
-            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            const wsFolder = workspace.workspaceFolders?.[0]; // Get the top level workspace folder
 
             if(!wsFolder){
-                vscode.window.showInformationMessage('No Project found to compile file in!');
+                window.showInformationMessage('No Project found to compile file in!');
                 return;
             }
 
-            const pre = os.platform() === 'win32' ? '' : './';
+            const pre = platform() === 'win32' ? '' : './';
             const command = fileUtils.getCommand(wsFolder);
 
             if(!command){
-                vscode.window.showErrorMessage('Build tool not supported! Only gradle or maven projects can be build.');
+                window.showErrorMessage('Build tool not supported! Only gradle or maven projects can be build.');
                 return;
             }
 
@@ -57,29 +55,28 @@ export default class Prototype {
                 await spawner.run(`${pre}${command[0]}`, [command[1]], { cwd: wsFolder.uri.fsPath, shell: true });
             } catch (err) {
                 console.log(err);
-                vscode.window.showErrorMessage(`Files couldn't be compiled!`);
+                window.showErrorMessage(`Files couldn't be compiled!`);
                 resolve('');
             }
             resolve(fileUtils.getCompiledFromJava(filePath));
-
         });
     }
 
     public static compileSingleFile(extensionPath: string, filePath: string): Promise<string>{
         return new Promise<string>(async (resolve) => {
 
-            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            const wsFolder = workspace.workspaceFolders?.[0]; // Get the top level workspace folder
             const projectDirPath = wsFolder!.uri.fsPath;
 
             if(!projectDirPath){
-                vscode.window.showWarningMessage('No Project found to compile file in!');
+                window.showWarningMessage('No Project found to compile file in!');
                 return;
             }
 
             const buildPath = fileUtils.getBuildPath(projectDirPath);
 
             if(!buildPath){
-                vscode.window.showInformationMessage('No Build Folder found. Compiling all files ...');
+                window.showInformationMessage('No Build Folder found. Compiling all files ...');
                 return this.compileAllFiles(filePath);
             }
 
@@ -92,19 +89,18 @@ export default class Prototype {
                 await spawner.run('javac', args, { cwd: projectDirPath });
             } catch (err) {
                 console.log(err);
-                vscode.window.showErrorMessage(`File couldn't be compiled!`);
+                window.showErrorMessage(`File couldn't be compiled!`);
                 resolve('');
             }
             resolve(fileUtils.getCompiledFromJava(filePath));
 
-        })
+        });
     }
 
-    public static matchFolderWithChain(extensionPath: string, chainPath: string, folderPath: string): Promise<boolean> {     
-        return new Promise<boolean>(async (resolve) => {
+    public static matchFolderWithChain(extensionPath: string, chainPath: string, folderPath: string): Promise<void> {     
+        return new Promise<void>(async (resolve, reject) => {
             if(!chainPath){
-                vscode.window.showInformationMessage('Chain is not set!');
-                resolve(false);
+                reject(new Error(`Chain is not set!`));
             }
             const absPrototypePath = path.join(extensionPath, this._prototypePath);
 
@@ -115,54 +111,22 @@ export default class Prototype {
             //dir from where the command is run and the output is being placed
             const outputFolder = await fileUtils.createOrGetOutputFolder(extensionPath);
             
-            const args = ['--chain', chainPath, '--input', folderPath, '--output', outputName]; 
-
-            const output = this.createOrShowOutputChannel();
-            output.append(`Matching ${folderName}`);
-
-            const interval = setInterval(() => {
-                output.append('.');
-            },500);
+            const args = ['--chain', chainPath, '--input', folderPath, '--output', path.join(outputFolder, outputName)]; 
 
             try {
-                const result = await spawner.runGetOutput('java', ['-jar', absPrototypePath, ...args], { cwd: outputFolder });
-                output.append(`\n\nMatched ${folderName}: `);
-                clearInterval(interval);
-                this.processResult(result, output);
+                this.executeInTerminal('java', '-jar', absPrototypePath, ...args);
             } catch (err) {
-                output.appendLine('\n\nFolder could not be matched!');
-                clearInterval(interval);
-                resolve(false);
+                reject(new Error(`Error during matching process`));
             }
-            resolve(true);
-        })
+            resolve();
+        });
     }
-
-    //returns the outupt channel where the matching results are displayed
-    private static createOrShowOutputChannel(): vscode.OutputChannel{
-        if(this._outputChannel){
-            this._outputChannel.show();
-            return this._outputChannel;
-        }
-        this._outputChannel = vscode.window.createOutputChannel('Aldesco Output');
-        this._outputChannel.show();
-        return this._outputChannel;
+    
+    private static executeInTerminal(...args: string[]){
+        const terminal = window.activeTerminal ? window.activeTerminal : window.createTerminal();
+        terminal.show();
+        terminal.sendText(args.join(' '));
     }
-
-    private static processResult(data: string, output: vscode.OutputChannel){
-        const reg = /\d+\/\d+/g;
-        const matched = data.match(reg);
-        if(matched){
-            output.append(matched[matched.length - 1]);
-        }
-
-        const splitPoint = 'Total number of matches:';
-        const splitIndex = data.indexOf(splitPoint);
-        const remaining = data.substring(splitIndex);
-
-        output.appendLine('\n\n' + remaining);
-    }
-
 
     //searches for a .class file in the build folder from a .java file name in the src folder
     public static getCompiledFromJava(notCompiledPath: string): Promise<string> {
@@ -180,7 +144,7 @@ export default class Prototype {
                 res(compiled);
             }
     
-        })
+        });
     }
 
 }

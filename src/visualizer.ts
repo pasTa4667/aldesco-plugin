@@ -41,10 +41,10 @@ export default class Visualizer {
                 resolve(Visualizer.currentVisualizer);
             } else {
                 Visualizer.currentVisualizer = new Visualizer(extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
-                await Visualizer.currentVisualizer.wasMessageReceived('Started')
+                await Visualizer.currentVisualizer.wasMessageReceived('Started');
                 resolve(Visualizer.currentVisualizer);
             }
-        })
+        });
     }
 
     public duplicateActive(extensionPath: string, title: string): Promise<Visualizer | undefined> {
@@ -64,14 +64,14 @@ export default class Visualizer {
                 res(Visualizer.currentVisualizer);
             }
             res(undefined);
-        })
+        });
     }
     
     private constructor(extensionPath: string, column: vscode.ViewColumn, group?: number, fileName?: string) {
         this._extensionPath = extensionPath;
         const idGenerator = this.idGenerator();
         const id = idGenerator.next().value;
-        const title = fileName ? fileName : 'Visualizer ' + id
+        const title = fileName ? fileName : 'Visualizer ' + id;
         
         // Create and show a new webview panel
         this._panel = vscode.window.createWebviewPanel(Visualizer.viewType, title, column, {
@@ -99,7 +99,7 @@ export default class Visualizer {
             if (this._panel.active) {
                 Visualizer._activePanel.panel = this._panel;
             }
-        })
+        });
 
         this._panel.webview.onDidReceiveMessage((event) => {
             this.acknowledgeMessage(event);
@@ -120,7 +120,7 @@ export default class Visualizer {
             this._messageList.push({ type: type });
 
             await this.wasMessageReceived(type) ? res(true) : res(false);
-        })
+        });
     }
 
     private wasMessageReceived(type: string, notStarted?: boolean) {
@@ -145,7 +145,7 @@ export default class Visualizer {
                 await new Promise((resolve) => setTimeout(resolve, 100));
             }
             res(true);
-        })
+        });
     }
 
     private acknowledgeMessage(type: string) {
@@ -159,9 +159,9 @@ export default class Visualizer {
         const senderGroup = Visualizer._activePanel.group;
         Visualizer._panels.forEach((wvdata) => {
             if (wvdata.group === senderGroup) {
-                wvdata.panel?.webview.postMessage({ type: type, message: message })
+                wvdata.panel?.webview.postMessage({ type: type, message: message });
             }
-        })
+        });
     }
 
     public changeTitle(newTitle: string) {
@@ -170,7 +170,7 @@ export default class Visualizer {
             if (wvdata.group === senderGroup && newTitle && wvdata.panel) {
                 wvdata.panel!.title = newTitle;
             }
-        })
+        });
     }
 
     public dispose() {

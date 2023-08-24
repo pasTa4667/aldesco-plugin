@@ -51,7 +51,7 @@ export class TreeViewProvider implements vscode.TreeDataProvider<Content> {
         }
       });
     }else{
-      content.push(new Content(path.basename(elementPath), vscode.TreeItemCollapsibleState.None))
+      content.push(new Content(path.basename(elementPath), vscode.TreeItemCollapsibleState.None));
     }
 
     return content;

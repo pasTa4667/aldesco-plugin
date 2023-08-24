@@ -23,7 +23,7 @@ suite('Extension Test Suite', () => {
 
 	});
 
-	test.only('String test', () => {
+	test('String test', () => {
 		const text = 'test string here it begins and then \n something is missing \n stuff!s \n something \n is missing \n more is missing \n something is missing';
 		
 		const selection = 'something is missing';
@@ -31,6 +31,11 @@ suite('Extension Test Suite', () => {
 		const textBeforeSelection = text.split('\n').slice(0, endLine + 1).join('\n');
 		console.log(textBeforeSelection);
 
+	});
+
+	test.only('Terminal test', () => {
+		const terminal = vscode.window.createTerminal('Testing');
+		terminal.sendText('This is the programmer speaking');
 	});
 });
 

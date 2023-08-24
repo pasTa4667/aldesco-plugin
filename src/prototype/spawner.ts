@@ -1,5 +1,4 @@
 import { spawn } from "child_process";
-import { error } from "console";
 
 export interface RunOptions {
     cwd: string;
@@ -21,7 +20,7 @@ export async function run(command: string, args: string[], options: RunOptions):
 }
 
 export async function runGetOutput(command: string, args: string[], options: RunOptions): Promise<string> {
-    args.forEach((a) => console.log(a));
+
     return new Promise<string>((resolve, reject) => {
         const process = spawn(command, args, { shell: options.shell ? true : false, cwd: options.cwd, stdio: 'pipe' });
         let output = '';
