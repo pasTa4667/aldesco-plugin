@@ -31,72 +31,72 @@
       {
         "command": "aldesco-extension.visualizer",
         "title": "Open Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.rightClickLogFile",
         "title": "Open in Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openLogFileInVis",
         "title": "Open Log File in Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.duplicateVis",
         "title": "Duplicate",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.testing",
         "title": "Testing",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openAST",
         "title": "Open AST",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openPattern",
         "title": "Open Pattern",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openMostRecentLogFile",
         "title": "Open Most Recent Log File in Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.visualizeSpoonAST",
         "title": "Visualize Spoon AST",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.setChain",
         "title": "Set as Chain",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.compileAllAndSetChain",
         "title": "Compile all",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.compileSingleAndSetChain",
         "title": "Compile single",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.currentChain",
         "title": "Show current Chain",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.folderMatching",
         "title": "Match Folder with Chain",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       }
     ],
     "menus": {

@@ -31,15 +31,15 @@ All features can be accessed via the `Command Palette` (Ctrl + Shift + P). Make 
 ## Command List
 The most important commands have been described above. Here is a list of all the commands available.
 
-1. **Visualizer: Open Visualizer**
-2. **Visualizer: Open Log File in Visualizer**
-3. **Visualizer: Open Most Recent Log File in Visualizer**
-4. **Visualizer: Visualize Spoon AST**
-5. **Visualizer: Set as Chain**
-6. **Visualizer: Compile and set as Chain**
-7. **Visualizer: Show current Chain**
-8. **Visualizer: Match Folder with Chain**
-9. **Visualizer: Duplicate Visualizer**
+1. **AlDeSCo: Open Visualizer**
+2. **AlDeSCo: Open Log File in Visualizer**
+3. **AlDeSCo: Open Most Recent Log File in Visualizer**
+4. **AlDeSCo: Visualize Spoon AST**
+5. **AlDeSCo: Set as Chain**
+6. **AlDeSCo: Compile and set as Chain**
+7. **AlDeSCo: Show current Chain**
+8. **AlDeSCo: Match Folder with Chain**
+9. **AlDeSCo: Duplicate Visualizer**
 
 <Requirements>
 
