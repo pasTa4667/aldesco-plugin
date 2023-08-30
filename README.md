@@ -22,7 +22,7 @@ All features can be accessed via the `Command Palette` (Ctrl + Shift + P). Make 
 
 **4. Open File in Visualizer**: A vis file can be either right-clicked and opened inside the Visualizer Webview or with a vis file opened and focused in the editor, the command can be run in the Command Palette.
 
-**5. Visualize Spoon AST**: Open a file to be visualized and either run the command in the `Command Palette` to visualize the entire file or right-click a line of a method or element to visualize the Spoon AST of the selected element.
+**5. Visualize Spoon AST**: Open a file to be visualized and either run the command in the `Command Palette` to visualize the entire file or select an element and right-click it, be sure to only select the element you want to visualize and not any additional whitespaces. An element can be a method, an entire class, an assignment or just a data type.
 
 **6. Set a Chain and Match Folder**: A Chain can be set by either right-clicking a CLASS File in the VS Code Explorer or by running the command in the `Command Palette` and choosing a CLASS File in the File Explorer. Additionally, a JAVA File can be right clicked automatically compiled and set as Chain or set as Chain without comiling. The Chain can also be set by directly by providing the absolute path of a Chain inside the aldesco-extension [Settings](#settings). To view the current Chain, run the **Show current Chain** command in the `Command Palette`. Lastly, right-click or select a folder with the **Match Folder with Chain** command and match the folder with the currently selected Chain.
 
