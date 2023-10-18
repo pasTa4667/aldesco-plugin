@@ -2,9 +2,8 @@
 import { format } from "date-fns";
 import * as spawner from "./spawner";
 import * as fileUtils from "./fileUtils";
-import * as path from 'path';
-import { window, workspace } from 'vscode';
-import { platform } from 'os';
+import { join, basename } from 'path';
+import * as vscode from 'vscode';
 
 export default class Prototype {
 
@@ -23,7 +22,7 @@ export default class Prototype {
             //from where the command is run
             const outputFolder = await fileUtils.createOrGetOutputFolder(extensionPath);
             //the local prototype path in the extension
-            const absPrototypePath = path.join(extensionPath, this._prototypePath);
+            const absPrototypePath = join(extensionPath, this._prototypePath);
 
             try{
                 await spawner.run('java', ['-jar', absPrototypePath, ...args], { cwd: outputFolder});  
@@ -36,18 +35,18 @@ export default class Prototype {
 
     public static compileAllFiles(filePath: string): Promise<string>{
         return new Promise<string>(async (resolve) => {
-            const wsFolder = workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
 
             if(!wsFolder){
-                window.showInformationMessage('No Project found to compile file in!');
+                vscode.window.showInformationMessage('No Project found to compile file in!');
                 return;
             }
 
-            const pre = platform() === 'win32' ? '' : './';
-            const command = fileUtils.getCommand(wsFolder);
+            const pre = fileUtils.getPrefix();
+            const command = fileUtils.getCompileCommand(wsFolder);
 
             if(!command){
-                window.showErrorMessage('Build tool not supported! Only gradle or maven projects can be build.');
+                vscode.window.showErrorMessage('Build tool not supported! Only gradle or maven projects can be build.');
                 return;
             }
 
@@ -55,7 +54,7 @@ export default class Prototype {
                 await spawner.run(`${pre}${command[0]}`, [command[1]], { cwd: wsFolder.uri.fsPath, shell: true });
             } catch (err) {
                 console.log(err);
-                window.showErrorMessage(`Files couldn't be compiled!`);
+                vscode.window.showErrorMessage(`Files couldn't be compiled!`);
                 resolve('');
             }
             resolve(fileUtils.getCompiledFromJava(filePath));
@@ -65,22 +64,22 @@ export default class Prototype {
     public static compileSingleFile(extensionPath: string, filePath: string): Promise<string>{
         return new Promise<string>(async (resolve) => {
 
-            const wsFolder = workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
             const projectDirPath = wsFolder!.uri.fsPath;
 
             if(!projectDirPath){
-                window.showWarningMessage('No Project found to compile file in!');
+                vscode.window.showWarningMessage('No Project found to compile file in!');
                 return;
             }
 
             const buildPath = fileUtils.getBuildPath(projectDirPath);
 
             if(!buildPath){
-                window.showInformationMessage('No Build Folder found. Compiling all files ...');
+                vscode.window.showInformationMessage('No Build Folder found. Compiling all files ...');
                 return this.compileAllFiles(filePath);
             }
 
-            const prototypeJarPath = path.join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar'); 
+            const prototypeJarPath = join(extensionPath, 'prototype', 'ast-prototype-1.0.0.jar'); 
 
             //javac adds packages to the target directory for use
             const args = ['-cp', `${buildPath};${prototypeJarPath}`, '-d', buildPath, filePath];
@@ -89,7 +88,7 @@ export default class Prototype {
                 await spawner.run('javac', args, { cwd: projectDirPath });
             } catch (err) {
                 console.log(err);
-                window.showErrorMessage(`File couldn't be compiled!`);
+                vscode.window.showErrorMessage(`File couldn't be compiled!`);
                 resolve('');
             }
             resolve(fileUtils.getCompiledFromJava(filePath));
@@ -102,16 +101,16 @@ export default class Prototype {
             if(!chainPath){
                 reject(new Error(`Chain is not set!`));
             }
-            const absPrototypePath = path.join(extensionPath, this._prototypePath);
+            const absPrototypePath = join(extensionPath, this._prototypePath);
 
-            const folderName = path.basename(folderPath);
+            const folderName = basename(folderPath);
             const formattedDate = format(new Date(), this._outputFormat);
             const outputName = `${folderName}-${formattedDate}.json`;
 
             //dir from where the command is run and the output is being placed
             const outputFolder = await fileUtils.createOrGetOutputFolder(extensionPath);
             
-            const args = ['--chain', chainPath, '--input', folderPath, '--output', path.join(outputFolder, outputName)]; 
+            const args = ['--chain', chainPath, '--input', folderPath, '--output', join(outputFolder, outputName)]; 
 
             try {
                 this.executeInTerminal('java', '-jar', absPrototypePath, ...args);
@@ -123,7 +122,7 @@ export default class Prototype {
     }
     
     private static executeInTerminal(...args: string[]){
-        const terminal = window.activeTerminal ? window.activeTerminal : window.createTerminal();
+        const terminal = vscode.window.activeTerminal ? vscode.window.activeTerminal : vscode.window.createTerminal();
         terminal.show();
         terminal.sendText(args.join(' '));
     }

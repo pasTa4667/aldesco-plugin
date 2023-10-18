@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
+import { join, basename, extname } from 'path';
+import { promises, readdirSync, readFileSync, existsSync } from 'fs';
+import { platform } from 'os';
 
 /*
 Contains various functions which handle file or directory operations for the prototype commands
@@ -16,30 +17,30 @@ export async function createOrGetOutputFolder(extensionPath: string): Promise<st
     const wsFolder = vscode.workspace.workspaceFolders?.[0];
 
     if (!wsFolder) {
-        vscode.window.showInformationMessage('Output Folder could not be generated: Output Files location: ' + path.join(extensionPath, 'prototype'));
-        return path.join(extensionPath, 'prototype');
+        vscode.window.showInformationMessage('Output Folder could not be generated: Output Files location: ' + join(extensionPath, 'prototype'));
+        return join(extensionPath, 'prototype');
     }
 
-    const outputPath = path.join(wsFolder.uri.fsPath, 'aldesco-output');
+    const outputPath = join(wsFolder.uri.fsPath, 'aldesco-output');
 
     try {
-        await fs.promises.mkdir(outputPath, { recursive: true });
+        await promises.mkdir(outputPath, { recursive: true });
         return outputPath;
     } catch (err) {
-        vscode.window.showInformationMessage('Output Folder could not be generated: Output Files location: ', path.join(extensionPath, 'prototype'));
-        return path.join(extensionPath, 'prototype');
+        vscode.window.showInformationMessage('Output Folder could not be generated: Output Files location: ', join(extensionPath, 'prototype'));
+        return join(extensionPath, 'prototype');
     }
 }
 
 /**
- * Returns the correct command depending on building tool in [0]
+ * Returns the correct compile command depending on building tool in [0]
  * and the correct argument in [1]. 
  * For example:
  * For a gradlew Project it will return
  * ['gradlew', 'compileJava']
  */
-export function getCommand(wsFolder: vscode.WorkspaceFolder): string[]{
-    const folder = fs.readdirSync(wsFolder.uri.fsPath);
+export function getCompileCommand(wsFolder: vscode.WorkspaceFolder): string[]{
+    const folder = readdirSync(wsFolder.uri.fsPath);
     const command: string[] = [];
     if (folder.includes('gradlew')) {
         command[0] = 'gradlew';
@@ -74,16 +75,16 @@ export function getCompiledFromJava(toBeSearchedPath: string): string {
         return '';
     }
 
-    const javaFileContents = fs.readFileSync(toBeSearchedPath, 'utf8');
+    const javaFileContents = readFileSync(toBeSearchedPath, 'utf8');
 
     // Determine the Java file name without the extension
-    const javaFileName = path.basename(toBeSearchedPath, path.extname(toBeSearchedPath));
+    const javaFileName = basename(toBeSearchedPath, extname(toBeSearchedPath));
 
     // Extract the package declaration from the Java file
     const packageDeclaration = javaFileContents.match(/package\s+([\w.]+)\s*;/);
 
     if (!packageDeclaration) {
-        return path.join(projectBuildPath, `${javaFileName}.class`);
+        return join(projectBuildPath, `${javaFileName}.class`);
     }
 
     const packageName = packageDeclaration[1];
@@ -92,10 +93,10 @@ export function getCompiledFromJava(toBeSearchedPath: string): string {
     const packagePath = packageName.replace(/\./g, '/');
 
     // Construct the path of the compiled .class file
-    const compiledClassFilePath = path.join(projectBuildPath, packagePath, `${javaFileName}.class`);
+    const compiledClassFilePath = join(projectBuildPath, packagePath, `${javaFileName}.class`);
 
     // Check if the compiled .class file exists
-    if (!fs.existsSync(compiledClassFilePath)) {
+    if (!existsSync(compiledClassFilePath)) {
         vscode.window.showWarningMessage('Compiled file could not be found!');
         return '';
     }
@@ -109,21 +110,40 @@ export function getCompiledFromJava(toBeSearchedPath: string): string {
 export function getBuildPath(projectDirectory: string): string {
     const givenBuildPath = configuration.get('prototype.sourceSetBuildLocation') as string;
 
-    if (givenBuildPath && fs.existsSync(givenBuildPath)) {
+    if (givenBuildPath && existsSync(givenBuildPath)) {
         return givenBuildPath;
     }
 
-    const gradleBuildPath = path.join(projectDirectory, 'build', 'classes', 'java', 'main');
-    const mavenBuildPath = path.join(projectDirectory, 'target', 'classes');
+    const gradleBuildPath = join(projectDirectory, 'build', 'classes', 'java', 'main');
+    const mavenBuildPath = join(projectDirectory, 'target', 'classes');
 
     // Check if Gradle build path exists
-    if (fs.existsSync(gradleBuildPath)) {
+    if (existsSync(gradleBuildPath)) {
         return gradleBuildPath;
     }
 
     // Check if Maven build path exists
-    if (fs.existsSync(mavenBuildPath)) {
+    if (existsSync(mavenBuildPath)) {
         return mavenBuildPath;
     }
     return '';
+}
+
+/**
+ * Returns the prefix based on the platform
+ */
+export function getPrefix(){
+    return platform() === 'win32' ? '' : './';
+}
+
+
+/**
+ *  Opens a file in a ViewColumn. (default ViewColumn.One) 
+ */
+export function openFile(filePath: string, viewColumn?: vscode.ViewColumn){
+    vscode.workspace.openTextDocument(filePath).then((document) => {
+        vscode.window.showTextDocument(document, viewColumn ? viewColumn : vscode.ViewColumn.One);
+    }, (error) => {
+        vscode.window.showErrorMessage(`Unable to open file: ${error.message}`);
+    });
 }

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import { join } from 'path';
 
 interface VisualizerData {
     panel?: vscode.WebviewPanel;
@@ -194,14 +194,14 @@ export default class Visualizer {
     }
 
     private _getHtmlForWebview() {
-        const manifest = require(path.join(this._extensionPath, 'visualizer', 'dist', 'asset-manifest.json'));
+        const manifest = require(join(this._extensionPath, 'visualizer', 'dist', 'asset-manifest.json'));
         const mainScript = manifest['files']['main.js'];
         const icon = manifest['files']['favicon.png'];
 
-        const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist', mainScript));
-        const iconPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'visualizer', 'dist', icon));
+        const scriptPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'visualizer', 'dist', mainScript));
+        const iconPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'visualizer', 'dist', icon));
 
-        const cssPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'src', 'media', 'webview.css'));
+        const cssPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'src', 'media', 'webview.css'));
 
         const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);

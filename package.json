@@ -22,8 +22,9 @@
       "explorer": [
         {
           "type": "tree",
-          "id": "aldesco-extension.outputView",
-          "name": "Aldesco Output"
+          "id": "aldesco-extension.matchTreeView",
+          "name": "Matches",
+          "when": "isMatchViewActive"
         }
       ]
     },
@@ -97,6 +98,21 @@
         "command": "aldesco-extension.folderMatching",
         "title": "Match Folder with Chain",
         "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.startMatchLoopFromTest",
+        "title": "Start Match Loop From Test",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.stopMatchLoop",
+        "title": "Stop Match Loop",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.openMatchesAsTree",
+        "title": "Open Match Tree",
+        "category": "AlDeSCo"
       }
     ],
     "menus": {
@@ -119,7 +135,7 @@
         },
         {
           "command": "aldesco-extension.visualizeSpoonAST",
-          "when": "isEditorJava"
+          "when": "editorIsJava"
         },
         {
           "command": "aldesco-extension.compileAllAndSetChain",
@@ -127,6 +143,18 @@
         },
         {
           "command": "aldesco-extension.compileSingleAndSetChain",
+          "when": "editorHasPattern"
+        },
+        {
+          "command": "aldesco-extension.startMatchLoopFromTest",
+          "when": "!isMatchLoopActive"
+        },
+        {
+          "command": "aldesco-extension.stopMatchLoop",
+          "when": "isMatchLoopActive"
+        },
+        {
+          "command": "aldesco-extension.openMatchesAsTree",
           "when": "false"
         }
       ],
@@ -149,6 +177,11 @@
         {
           "command": "aldesco-extension.folderMatching",
           "when": "resourceScheme == file && resourceExtname == ''",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.openMatchesAsTree",
+          "when": " resourceFilename =~ /\\.json/",
           "group": "navigation"
         }
       ],
