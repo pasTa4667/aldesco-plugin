@@ -3,8 +3,10 @@ import { join, basename} from 'path';
 import { readdirSync, statSync, readFileSync, existsSync } from 'fs';
 import Prototype from './prototype/ptCommands';
 import Visualizer from './visualizer';
-import { startMatchLoop, disposeMatchLoop } from './matchingLoop/mlCommands';
+import * as statusBarItem from './matchloop/statusBarItem';
+import { startMatchLoopFromTest, disposeMatchLoop } from './matchloop/matchLoopFromTest';
 import { initiateTreeView } from './treeView/treeViewProvider';
+import { addMatchInputFile, startMatchLoopFromPattern } from './matchloop/matchLoopFromPattern';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -241,12 +243,16 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.compileSingleAndSetChain', async (fileUri: vscode.Uri) => {
 			if (fileUri) {
-				const compiled = await Prototype.compileSingleFile(context.extensionPath, fileUri.fsPath);
-				if (compiled) {
-					chain = compiled;
-					await configuration.update('prototype.chainLocation', chain, false);
-					vscode.window.showInformationMessage('File compiled and current chain updated to:', basename(fileUri.fsPath));
-				}
+				await Prototype.compileSingleFile(context.extensionPath, fileUri.fsPath)
+					.then(async (compiled) => {
+						chain = compiled;
+						await configuration.update('prototype.chainLocation', chain, false);
+						vscode.window.showInformationMessage('File compiled and current chain updated to:', basename(fileUri.fsPath));
+
+					})
+					.catch((error) => { 
+						vscode.window.showErrorMessage(error); 
+					});
 			}
 		})
 	);
@@ -321,9 +327,9 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	//links the test file to its pattern and creates a rappel loop
+	//starts match loop from test file and opens pattern and the corresponding input file
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.startMatchLoopFromTest', async () => {
+		vscode.commands.registerCommand('aldesco-extension.startMatchLoopFromTest', () => {
 			if(isMatchLoopActive){
 				vscode.window.showErrorMessage('A Match Loop is already active!');
 				return;
@@ -335,7 +341,7 @@ export function activate(context: vscode.ExtensionContext) {
 				filePath = editor.document.uri.fsPath;
 			}
 
-			startMatchLoop(filePath);
+			startMatchLoopFromTest(filePath);
 			isMatchLoopActive = true;
 			updateIsMatchLoopActive(isMatchLoopActive);
 		})
@@ -354,24 +360,49 @@ export function activate(context: vscode.ExtensionContext) {
 
 	//command to open match json file as tree
 	context.subscriptions.push(
-		vscode.commands.registerCommand('aldesco-extension.openMatchesAsTree', (fileUri) => {
-			updateIsMatchViewActive(true);
-			initiateTreeView(fileUri.fsPath);
+		vscode.commands.registerCommand('aldesco-extension.openMatchesAsTree', async (fileUri) => {
+			const root =  await initiateTreeView(fileUri.fsPath);
+			if(root){
+				updateIsMatchViewActive(true);
+			}
+			return root;
+		})
+	);
+
+	//starts match loop from pattern and matches on a specific folder in the aldesco-output directory
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.startMatchLoopFromPattern', () => {
+			if (isMatchLoopActive) {
+				vscode.window.showErrorMessage('A Match Loop is already active!');
+				return;
+			}
+			const editor = getActiveEditor();
+			let filePath = '';
+			if (editor) {
+				filePath = editor.document.uri.fsPath;
+			}
+
+			startMatchLoopFromPattern(filePath, context.extensionPath);
+			isMatchLoopActive = true;
+			updateIsMatchLoopActive(isMatchLoopActive);
+		})
+	);
+
+	//adds an input file to the match loop input folder 
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.addInputResource', (fileUri) => {
+			addMatchInputFile(fileUri.fsPath, context.extensionPath);
 		})
 	);
 
 	//command for testing
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.testing', async () => {
-			setTimeout(() => {
-				const diagnostics = vscode.languages.getDiagnostics(getActiveEditor()!.document.uri);
-				const hasError = diagnostics.some((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Error);
-				if (hasError) {
-					console.log('error in syntax');
-				} else {
-					console.log('correct syntax');
-				}
-			},200);
+			statusBarItem.initialize();
+			const md = new vscode.MarkdownString(`<style type="text/css">.tg  {border-collapse:collapse;}.tg .tg-left{text-align:left;vertical-align:center}.tg .tg-right{text-align:right;vertical-align:center}</style><table class="tg"><tr><td class="tg-left">bar.java<br></td><td class="tg-right">2 Matches<br></td></tr><tr style="border: 2px solid #888; margin-top: 5px;" ></tr><tr><td class="tg-left">fooo.java<br></td><td class="tg-right">1234 Matches</td></tr></table>`);
+			md.supportHtml = true;
+			md.isTrusted = true;
+			statusBarItem.setToolTip(md);
 		})
 	);
 

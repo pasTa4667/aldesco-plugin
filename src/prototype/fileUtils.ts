@@ -32,6 +32,19 @@ export async function createOrGetOutputFolder(extensionPath: string): Promise<st
     }
 }
 
+export function createOrGetFolder(existingPath: string, folderName: string){
+    return new Promise<string> (async (resolve, reject) => {
+        const folderPath = join(existingPath, folderName);
+    
+        try {
+            await promises.mkdir(folderPath, { recursive: true });
+            resolve(folderPath);
+        } catch (err) {
+            reject('Directory could not be created:' + err);
+        }
+    });
+}
+
 /**
  * Returns the correct compile command depending on building tool in [0]
  * and the correct argument in [1]. 

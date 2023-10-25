@@ -62,14 +62,13 @@ export default class Prototype {
     }
 
     public static compileSingleFile(extensionPath: string, filePath: string): Promise<string>{
-        return new Promise<string>(async (resolve) => {
+        return new Promise<string>(async (resolve, reject) => {
 
             const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
             const projectDirPath = wsFolder!.uri.fsPath;
 
             if(!projectDirPath){
-                vscode.window.showWarningMessage('No Project found to compile file in!');
-                return;
+                reject('No Project found to compile file in!');
             }
 
             const buildPath = fileUtils.getBuildPath(projectDirPath);
@@ -87,9 +86,7 @@ export default class Prototype {
             try {
                 await spawner.run('javac', args, { cwd: projectDirPath });
             } catch (err) {
-                console.log(err);
-                vscode.window.showErrorMessage(`File couldn't be compiled!`);
-                resolve('');
+                reject('File couldn\'t be compiled: ' + err);
             }
             resolve(fileUtils.getCompiledFromJava(filePath));
 
@@ -116,6 +113,33 @@ export default class Prototype {
                 this.executeInTerminal('java', '-jar', absPrototypePath, ...args);
             } catch (err) {
                 reject(new Error(`Error during matching process`));
+            }
+            resolve();
+        });
+    }
+
+    //Matching folder not in terminal for match loop
+    public static matchFolderWithChainML(extensionPath: string, compiledPath: string, folderPath: string): Promise<void> {
+        return new Promise<void>(async (resolve, reject) => {
+
+            const wsFolder = vscode.workspace.workspaceFolders?.[0]; // Get the top level workspace folder
+            const projectDirPath = wsFolder!.uri.fsPath;
+
+            if (!projectDirPath) {
+                reject('No Project found to compile file in!');
+            }
+
+            const absPrototypePath = join(extensionPath, this._prototypePath);
+
+            //dir from where the command is run and the output is being placed
+            const outputFolder = await fileUtils.createOrGetOutputFolder(extensionPath);
+
+            const args = ['-jar', absPrototypePath,'--chain', compiledPath, '--input', folderPath, '--output', join(outputFolder, 'match-loop-results.json')];
+
+            try {
+                await spawner.run('java', args,{ cwd: projectDirPath });
+            } catch (err) {
+                reject(new Error('Error during matching Process'));
             }
             resolve();
         });

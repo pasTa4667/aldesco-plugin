@@ -113,6 +113,16 @@
         "command": "aldesco-extension.openMatchesAsTree",
         "title": "Open Match Tree",
         "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.startMatchLoopFromPattern",
+        "title": "Start Match Loop From Pattern",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.addInputResource",
+        "title": "Add Match Loop Input",
+        "category": "AlDeSCo"
       }
     ],
     "menus": {
@@ -156,7 +166,15 @@
         {
           "command": "aldesco-extension.openMatchesAsTree",
           "when": "false"
-        }
+        },
+        {
+          "command": "aldesco-extension.startMatchLoopFromPattern",
+          "when": "editorHasPattern"
+        },
+        {
+          "command": "aldesco-extension.addInputResource",
+          "when": "editorIsJava"
+        }    
       ],
       "explorer/context": [
         {
@@ -183,6 +201,11 @@
           "command": "aldesco-extension.openMatchesAsTree",
           "when": " resourceFilename =~ /\\.json/",
           "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.addInputResource",
+          "when": "resourceFilename =~ /\\.java/",
+          "group": "explorer"
         }
       ],
       "editor/context": [

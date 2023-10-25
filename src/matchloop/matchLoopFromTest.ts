@@ -3,15 +3,14 @@ import { basename, extname, join } from 'path';
 import * as vscode from 'vscode';
 import { run } from '../prototype/spawner';
 import { openFile } from '../prototype/fileUtils';
+import * as statusBarItem from './statusBarItem';
 
 
 //TODO: refactor event listener system
 
 let matchLoopDisposable: vscode.Disposable | null;
-let statusBarItem: vscode.StatusBarItem | null;
-let statusBarErrorColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 
-export async function startMatchLoop(testFilePath: string) {
+export async function startMatchLoopFromTest(testFilePath: string) {
     const wsFolders = vscode.workspace.workspaceFolders;
 
     if(!wsFolders){
@@ -49,28 +48,28 @@ export async function startMatchLoop(testFilePath: string) {
                 vscode.window.showInformationMessage(error);
             });
     
-    initStatusBarItem();
+    statusBarItem.initialize();
     let isProcessing = false;
 
     //do this when in pattern file
     matchLoopDisposable = vscode.workspace.onDidChangeTextDocument(async (event) => {
         if (event.document.uri.fsPath === patternFilePath && !isProcessing) {
             isProcessing = true;
-            setStatusBarItemLoading();
-
+            
             // Set a new timeout to wait for inactivity
             setTimeout(async () => {
+                statusBarItem.setLoadingState();
                 await event.document.save();
 
                 //if(!await hasDiagnosticsError(event.document.uri)){
 
                     await run(command, commandArgs, { cwd: wsFolders[0].uri.fsPath, shell: true }).then(() => {
                         //positive match
-                        setStatusBarItemMatched();
+                        statusBarItem.setMatchedState();
                         console.log("test successful");
                     }).catch(() => {
                         //negative match
-                        setStatusBarItemFailed();
+                        statusBarItem.setFailedState();
                         console.log("test failed");
                     });
     
@@ -92,33 +91,8 @@ function hasDiagnosticsError(uri: vscode.Uri): Promise<boolean>{
     });
 }
 
-function initStatusBarItem(){
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-    statusBarItem.text = 'Waiting';
-    statusBarItem.tooltip = 'Pattern Matching Status';
-    statusBarItem.command = {
-        title: '',
-        command: 'aldesco-extension.stopMatchLoop'
-    }
-    statusBarItem.show();
-}
-
-function setStatusBarItemMatched(){
-    statusBarItem!.text = 'Matched';
-    statusBarItem!.backgroundColor = undefined;
-}
-
-function setStatusBarItemFailed() {
-    statusBarItem!.backgroundColor = statusBarErrorColor;
-    statusBarItem!.text = 'Failed';
-}
-
-function setStatusBarItemLoading(){
-    statusBarItem!.text = '$(loading~spin) Matching';
-}
-
 export function disposeMatchLoop() {
-    if (statusBarItem && matchLoopDisposable) {
+    if (statusBarItem.isActive() && matchLoopDisposable) {
         statusBarItem.dispose();
         matchLoopDisposable.dispose();
     }

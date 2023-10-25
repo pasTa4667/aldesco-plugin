@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { readFile } from 'fs';
 import { basename } from 'path';
+import * as resultAnalyzer from './resultAnalyzer';
 
 type Snippet = {
   propability: number;
@@ -45,7 +46,7 @@ export class TreeViewProvider implements vscode.TreeDataProvider<ResultContainer
 
 }
 
-class ResultContainer extends vscode.TreeItem {
+export class ResultContainer extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly results: ResultContainer[],
@@ -56,6 +57,7 @@ class ResultContainer extends vscode.TreeItem {
     private filePath?: string,
     private methodName?: string,
     public command?: vscode.Command,
+    public readonly isFile?: boolean, //for analysing the results later on
 
   ) {
     if (label === '') {
@@ -67,6 +69,10 @@ class ResultContainer extends vscode.TreeItem {
     }
     
     this.iconPath = new vscode.ThemeIcon(this.icon);
+    
+    if(this.icon == Icon.fileCode){
+      this.isFile = true;
+    }
     
   }
 
@@ -91,30 +97,46 @@ class ResultContainer extends vscode.TreeItem {
  * Adds the Output Tree View to the explorer
  */
 export function initiateTreeView(jsonFilePath: string){
-  let result: Result[] = [];
-  readFile(jsonFilePath, 'utf8', (err, data) => {
-    try {
-      result = JSON.parse(data);
-      if(result){
-        const folderName = basename(jsonFilePath);
-        const root = sortReultIntoTree(result, folderName);
-
-        if(root){
-          vscode.window.createTreeView('aldesco-extension.matchTreeView', {
-            treeDataProvider: new TreeViewProvider(root)
-          });
+  return new Promise<ResultContainer> ((res, rej) => {
+    let result: Result[] = [];
+    readFile(jsonFilePath, 'utf8', (err, data) => {
+      try {
+        result = JSON.parse(data);
+        if(result){
+          const folderName = basename(jsonFilePath);
+          const root = sortResultIntoTree(result, folderName);
+  
+          if(root.results.length != 0){
+            vscode.window.createTreeView('aldesco-extension.matchTreeView', {
+              treeDataProvider: new TreeViewProvider(root)
+            });
+            res(root);
+          }else{
+            rej(undefined);
+          }
         }
+      } catch (error) {
+        console.error('Error parsing the JSON data', error);
+        vscode.window.showErrorMessage('File could not be read or parsed');
+        rej(undefined);
       }
-    } catch (error) {
-      console.error('Error parsing the JSON data', error);
-      vscode.window.showErrorMessage('File could not be read or parsed');
-      return;
-    }
-  });
+    });
+  })
 }
 
 
-function sortReultIntoTree(results: Result[], root: string) {
+/**
+ * Returns the analyzed results of the current Match Tree, if one exists.
+ * File name as key and number of matches as value.
+ */
+export function analyzeMatchResults(rootContainer: ResultContainer): Map<string, number> | undefined{
+  if(rootContainer){
+    return resultAnalyzer.analyzeMatchResults(rootContainer);
+  }
+}
+
+
+function sortResultIntoTree(results: Result[], root: string) {
   const rootContainer: ResultContainer = new ResultContainer(root, [], vscode.TreeItemCollapsibleState.Collapsed, Icon.json);
 
   results.forEach((result) => {
@@ -124,12 +146,12 @@ function sortReultIntoTree(results: Result[], root: string) {
     // Initialize the current container as the root container
     let currentContainer: ResultContainer = rootContainer;
 
-    const addContainer = (fileNameOrPath: string, file?: boolean) => {
-      let matchingContainer = currentContainer.results.find((cont) => cont.label === fileNameOrPath);
+    const addContainer = (fileOrDirName: string, file?: boolean) => {
+      let matchingContainer = currentContainer.results.find((cont) => cont.label === fileOrDirName);
 
       if (!matchingContainer) {
         // If the container doesn't exist, create a new one and add it to the current container
-        matchingContainer = new ResultContainer(fileNameOrPath, [], vscode.TreeItemCollapsibleState.Collapsed, file ? Icon.fileCode : Icon.folder);
+        matchingContainer = new ResultContainer(fileOrDirName, [], vscode.TreeItemCollapsibleState.Collapsed, file ? Icon.fileCode : Icon.folder);
         currentContainer.results.push(matchingContainer);
       }
 
