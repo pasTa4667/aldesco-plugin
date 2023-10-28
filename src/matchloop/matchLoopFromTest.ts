@@ -1,12 +1,10 @@
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { basename, extname, join } from 'path';
 import * as vscode from 'vscode';
-import { run } from '../prototype/spawner';
-import { openFile } from '../prototype/fileUtils';
+import { run } from '../prototype-commands/spawner';
+import { openFile } from '../prototype-commands/fileUtils';
 import * as statusBarItem from './statusBarItem';
 
-
-//TODO: refactor event listener system
 
 let matchLoopDisposable: vscode.Disposable | null;
 
@@ -91,8 +89,8 @@ function hasDiagnosticsError(uri: vscode.Uri): Promise<boolean>{
     });
 }
 
-export function disposeMatchLoop() {
-    if (statusBarItem.isActive() && matchLoopDisposable) {
+export function disposeMatchLoopFromTest() {
+    if (matchLoopDisposable) {
         statusBarItem.dispose();
         matchLoopDisposable.dispose();
     }

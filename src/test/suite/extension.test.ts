@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import Prototype from '../../prototype/ptCommands';
+import Prototype from '../../prototype-commands/ptCommands';
 import * as vscode from 'vscode';
 
 suite('Extension Test Suite', () => {

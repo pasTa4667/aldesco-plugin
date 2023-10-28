@@ -11,12 +11,12 @@ type Snippet = {
   file: string;
   range: { startLine: number, endLine: number };
   labels: string[];
-}
+};
 
 type Result = {
   snippets: Snippet[];
   name: string;
-}
+};
 
 enum Icon {
   json = 'json',
@@ -70,7 +70,7 @@ export class ResultContainer extends vscode.TreeItem {
     
     this.iconPath = new vscode.ThemeIcon(this.icon);
     
-    if(this.icon == Icon.fileCode){
+    if(this.icon === Icon.fileCode){
       this.isFile = true;
     }
     
@@ -82,14 +82,14 @@ export class ResultContainer extends vscode.TreeItem {
       title: '',
       command: 'vscode.open',
       arguments: [vscode.Uri.file(this.filePath!), {selection: this.generateSelectionFromRange()}],
-    }
+    };
   }
 
   private generateSelectionFromRange(){
     const startLine = this.snippets![0].range.startLine - 1;
     const endLine = this.snippets![0].range.endLine;
 
-    return  { start: {line: startLine, character: 0}, end: {line: endLine, character: 0}}
+    return  { start: {line: startLine, character: 0}, end: {line: endLine, character: 0}};
   }
 }
 
@@ -106,7 +106,7 @@ export function initiateTreeView(jsonFilePath: string){
           const folderName = basename(jsonFilePath);
           const root = sortResultIntoTree(result, folderName);
   
-          if(root.results.length != 0){
+          if(root.results.length !== 0){
             vscode.window.createTreeView('aldesco-extension.matchTreeView', {
               treeDataProvider: new TreeViewProvider(root)
             });
@@ -121,7 +121,7 @@ export function initiateTreeView(jsonFilePath: string){
         rej(undefined);
       }
     });
-  })
+  });
 }
 
 
@@ -157,7 +157,7 @@ function sortResultIntoTree(results: Result[], root: string) {
 
       // Update the current container for the next iteration
       currentContainer = matchingContainer;
-    }
+    };
 
     resultPath.forEach((dir) => {
       addContainer(dir);

@@ -10,7 +10,7 @@ export function initialize() {
     statusBarItem.command = {
         title: '',
         command: 'aldesco-extension.stopMatchLoop'
-    }
+    };
     statusBarItem.show();
 }
 

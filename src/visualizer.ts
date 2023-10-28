@@ -26,21 +26,23 @@ export default class Visualizer {
     private readonly _extensionPath: string;
     private _disposables: vscode.Disposable[] = [];
     private readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
+    private static context: vscode.ExtensionContext;
 
     //message list to keep track of not acknowledged messages
     private _messageList: { type: string }[] = [];
 
-    public static createOrShow(extensionPath: string, fileName?: string): Promise<Visualizer | undefined> {
+    public static createOrShow(context: vscode.ExtensionContext, fileName?: string): Promise<Visualizer | undefined> {
         return new Promise<Visualizer>(async (resolve) => {
+            Visualizer.context = context;
             const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
-
+            
             // If we already have a panel, show it.
             // Otherwise, create a new panel.
             if (Visualizer.currentVisualizer) {
                 Visualizer.currentVisualizer._panel.reveal(column);
                 resolve(Visualizer.currentVisualizer);
             } else {
-                Visualizer.currentVisualizer = new Visualizer(extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
+                Visualizer.currentVisualizer = new Visualizer(context.extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
                 await Visualizer.currentVisualizer.wasMessageReceived('Started');
                 resolve(Visualizer.currentVisualizer);
             }
@@ -201,8 +203,14 @@ export default class Visualizer {
         const scriptPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'visualizer', 'dist', mainScript));
         const iconPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'visualizer', 'dist', icon));
 
-        const cssPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'src', 'media', 'webview.css'));
-
+        //the path changes depending on dev or production mode
+        let cssPathOnDisk;
+        if(Visualizer.context.extensionMode === vscode.ExtensionMode.Production){
+            cssPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'media', 'webview.css'));
+        }else {
+            cssPathOnDisk = vscode.Uri.file(join(this._extensionPath,'src', 'media', 'webview.css'));
+        }
+        
         const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
         const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);

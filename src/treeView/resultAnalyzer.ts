@@ -10,7 +10,7 @@ export function analyzeMatchResults(rootContainer: ResultContainer): Map<string,
             }
             resultMap.set(container.label, container.results.length);
         }
-    }
+    };
 
     fillResultMap(rootContainer);
     return resultMap;

@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as statusBarItem from './statusBarItem';
-import * as fileUtils from "../prototype/fileUtils";
+import * as fileUtils from "../prototype-commands/fileUtils";
 import { join, basename } from 'path';
 import { copyFile } from 'fs';
-import Prototype from '../prototype/ptCommands'; 
+import Prototype from '../prototype-commands/ptCommands'; 
 import { ResultContainer, analyzeMatchResults } from "../treeView/treeViewProvider";
 
 
@@ -11,7 +11,6 @@ let matchLoopDisposable: vscode.Disposable | null;
 let toMatchFolderPath: string;
 
 const matchLoopResultFileName = 'match-loop-results.json';
-const columnSeparator = ' \u2502 ';
 
 export async function startMatchLoopFromPattern(patternFilePath: string, extensionPath: string) {
     const wsFolders = vscode.workspace.workspaceFolders;
@@ -103,6 +102,13 @@ export async function addMatchInputFile(inputFilePath: string, extensionPath: st
     });
 }
 
+export function disposeMatchLoopFromPattern(){
+    if(matchLoopDisposable) {
+        matchLoopDisposable.dispose();
+        statusBarItem.dispose();
+    }
+}
+
 function addResultsToStatusBarItem(results?: Map<string, number>){
     if(!results || results.size === 0){
         statusBarItem.setFailedState('No Match');
@@ -114,7 +120,7 @@ function addResultsToStatusBarItem(results?: Map<string, number>){
     let toolTipText: string[] = [];
     
     results.forEach((matches, fileName) => {
-        toolTipText.push(`<tr><td>${fileName}&emsp;</td><td>${matches} Match(es)</td></tr>`);
+        toolTipText.push(`<tr><td>${fileName}</td><td>&emsp;-&emsp;</td><td>${matches} Match(es)</td></tr>`);
     });
     //importend: no tabs or linebreaks in the html, or it wont work
     const html = `<table>${toolTipText.join('')}</table>`;
