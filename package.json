@@ -101,7 +101,7 @@
       },
       {
         "command": "aldesco-extension.startMatchLoopFromTest",
-        "title": "Start Match Loop From Test",
+        "title": "Start Match Loop From Test (Experimental)",
         "category": "AlDeSCo"
       },
       {
@@ -174,7 +174,11 @@
         {
           "command": "aldesco-extension.addInputResource",
           "when": "editorIsJava"
-        }    
+        },
+        {
+          "command": "aldesco-extension.testing",
+          "when": "false"
+        }
       ],
       "explorer/context": [
         {
@@ -276,12 +280,12 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "vscode:prepublish": "npm run package",
+    "webpack": "webpack --mode development",
+    "webpack-dev": "webpack --mode development --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "build": "webpack --mode production",
+    "test-compile": "tsc -p ./"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -292,12 +296,20 @@
     "@typescript-eslint/eslint-plugin": "^5.53.0",
     "@typescript-eslint/parser": "^5.53.0",
     "@vscode/test-electron": "^2.2.3",
+    "copy-webpack-plugin": "^11.0.0",
     "eslint": "^8.34.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "typescript": "^4.9.5"
+    "ts-loader": "^9.5.0",
+    "typescript": "^4.9.5",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "date-fns": "^2.30.0"
-  }
+  },
+  "files": [
+    "out/**",
+    "node_modules/**"
+  ]
 }
