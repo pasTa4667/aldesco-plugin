@@ -28,7 +28,7 @@ All features can be accessed via the `Command Palette` (Ctrl + Shift + P). Make 
 
 **6. Set a Chain and Match Folder**: A Chain can be set by either right-clicking a CLASS File in the VS Code Explorer or by running the command in the `Command Palette` and choosing a CLASS File in the File Explorer. Additionally, a JAVA File can be right clicked automatically compiled and set as Chain or set as Chain without comiling. The Chain can also be set by directly by providing the absolute path of a Chain inside the aldesco-extension [Settings](#settings). To view the current Chain, run the **Show current Chain** command in the `Command Palette`. Lastly, right-click or select a folder with the **Match Folder with Chain** command and match the folder with the currently selected Chain.
 
-**7. Start Match Loop From Test**: When working with aldesco, you might have already implemented a test for a pattern. Execute this command on an existing test, where a Pattern Chain is provided (variable must be called CHAIN, i.e Palindrome.CHAIN). The command will continuously execute the test, when changing something in the Pattern file. Feedback will be displayed in the Activity Bar.
+**7. Start Match Loop From Test (Experimental)**: When working with aldesco, you might have already implemented a test for a pattern. Execute this command on an existing test, where a Pattern Chain is provided (variable must be called CHAIN, i.e Palindrome.CHAIN). The command will continuously execute the test, when changing something in the Pattern file. Feedback will be displayed in the Activity Bar. This might not work too well, it's still experimental.
 
 **8. Start Match Loop From Pattern**: Starts a Match Loop from a Pattern and will match with the `MatchInputs` Folder within the [Output Folder](#output-folder). Input Resources can be added to the `MatchInputs` Folder with the `Add Match Loop Input` command (right click a java file). For generating the results in the Activity Bar, there will be a `match-loop-results.json` created within the aldesco-output folder.
 
@@ -45,11 +45,12 @@ The most important commands have been described above. Here is a list of all the
 7. **AlDeSCo: Show current Chain**
 8. **AlDeSCo: Match Folder with Chain**
 9. **AlDeSCo: Duplicate Visualizer**
-10. **AlDeSCo: Start Match Loop From Test**
+10. **AlDeSCo: Start Match Loop From Test (Experimental)**
 11. **AlDeSCo: Start Match Loop From Pattern**
 12. **AlDeSCo: Add Match Loop Input**
 13. **AlDeSCo: Stop Match Loop**
 14. **AlDeSCo: Open Match Tree**
+15. **AlDeSCo: Clear Match Input Folder**
 
 <Requirements>
 
@@ -77,10 +78,6 @@ Most of the time setting the paths manually is not necessary and can be done thr
 
 Sometimes the Visualizer does not load properly.
 Fix: Click Hide/Show view or reload the same file.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
 
 ### 1.0.0
 

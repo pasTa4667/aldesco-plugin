@@ -123,6 +123,11 @@
         "command": "aldesco-extension.addInputResource",
         "title": "Add Match Loop Input",
         "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.clearMatchInputFolder",
+        "title": "Clear Match Input Folder",
+        "category": "AlDeSCo"
       }
     ],
     "menus": {
@@ -169,13 +174,13 @@
         },
         {
           "command": "aldesco-extension.startMatchLoopFromPattern",
-          "when": "editorHasPattern"
+          "when": "editorHasPattern && !isMatchLoopActive"
         },
         {
           "command": "aldesco-extension.addInputResource",
           "when": "editorIsJava"
         },
-        {
+        { 
           "command": "aldesco-extension.testing",
           "when": "false"
         }
@@ -285,7 +290,8 @@
     "webpack-dev": "webpack --mode development --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "build": "webpack --mode production",
-    "test-compile": "tsc -p ./"
+    "test-compile": "tsc -p ./",
+    "watch": "tsc -w"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

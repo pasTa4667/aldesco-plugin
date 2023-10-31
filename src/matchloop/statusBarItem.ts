@@ -31,12 +31,14 @@ export function setFailedState(text?: string) {
     if(statusBarItem){
         statusBarItem.backgroundColor = statusBarErrorColor;
         statusBarItem.text = text ? text : 'Failed';
+        statusBarItem.tooltip = 'No Matches';
     }
 }
 
 export function setLoadingState() {
     if(statusBarItem){
         statusBarItem.text = '$(loading~spin) Matching';
+        statusBarItem.tooltip = '';
     }
 }
 

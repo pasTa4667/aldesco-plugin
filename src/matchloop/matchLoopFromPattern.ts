@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import * as statusBarItem from './statusBarItem';
 import * as fileUtils from "../prototype-commands/fileUtils";
 import { join, basename } from 'path';
-import { copyFile } from 'fs';
+import { copyFile, readdirSync, statSync, unlinkSync } from 'fs';
 import Prototype from '../prototype-commands/ptCommands'; 
 import { ResultContainer, analyzeMatchResults } from "../treeView/treeViewProvider";
+import path = require('path');
 
 
 let matchLoopDisposable: vscode.Disposable | null;
@@ -25,9 +26,6 @@ export async function startMatchLoopFromPattern(patternFilePath: string, extensi
         await createOrGetInputMatchFolder(extensionPath);
     }
     
-    //start matching with compiled pattern and folder
-    //analyze the output
-    //show analyzed output
     statusBarItem.initialize();
     let isProcessing = false;
     let hasCompiled = true;
@@ -102,6 +100,31 @@ export async function addMatchInputFile(inputFilePath: string, extensionPath: st
     });
 }
 
+export async function clearMatchInputFolder(extensionPath: string){
+    if (!toMatchFolderPath) {
+        await createOrGetInputMatchFolder(extensionPath);
+    }
+
+    try {
+        // Read the directory contents
+        const files = readdirSync(toMatchFolderPath);
+
+        // Loop through the files and remove them
+        files.forEach((file) => {
+            const filePath = path.join(toMatchFolderPath, file);
+
+            if (statSync(filePath).isFile()) {
+                unlinkSync(filePath); // Remove the file
+            }
+        });
+
+        vscode.window.showInformationMessage('Match Input Folder cleared.');
+    } catch (err) {
+        vscode.window.showErrorMessage('Match Input Folder could not be cleared: ' + err);
+    }
+
+}
+
 export function disposeMatchLoopFromPattern(){
     if(matchLoopDisposable) {
         matchLoopDisposable.dispose();
@@ -115,7 +138,7 @@ function addResultsToStatusBarItem(results?: Map<string, number>){
         return;
     }
 
-    statusBarItem.setMatchedState(`${results.size} Files Matched`);
+    statusBarItem.setMatchedState(`${results.size} File(s) Matched`);
 
     let toolTipText: string[] = [];
     

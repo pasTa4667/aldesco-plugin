@@ -6,7 +6,7 @@ import Visualizer from './visualizer';
 import * as statusBarItem from './matchloop/statusBarItem';
 import { startMatchLoopFromTest, disposeMatchLoopFromTest } from './matchloop/matchLoopFromTest';
 import { initiateTreeView } from './treeView/treeViewProvider';
-import { addMatchInputFile, disposeMatchLoopFromPattern, startMatchLoopFromPattern } from './matchloop/matchLoopFromPattern';
+import { addMatchInputFile, clearMatchInputFolder, disposeMatchLoopFromPattern, startMatchLoopFromPattern } from './matchloop/matchLoopFromPattern';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
@@ -386,7 +386,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			startMatchLoopFromPattern(filePath, context.extensionPath);
 			isMatchLoopActive = true;
-			updateIsMatchLoopActive(isMatchLoopActive);
+			updateIsMatchLoopActive(true);
 		})
 	);
 
@@ -394,6 +394,13 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.addInputResource', (fileUri) => {
 			addMatchInputFile(fileUri.fsPath, context.extensionPath);
+		})
+	);
+
+	//remove all files from the match input folder
+	context.subscriptions.push(
+		vscode.commands.registerCommand('aldesco-extension.clearMatchInputFolder', async () => {
+			clearMatchInputFolder(context.extensionPath);
 		})
 	);
 
@@ -407,6 +414,7 @@ export function activate(context: vscode.ExtensionContext) {
 			statusBarItem.setToolTip(md);
 		})
 	);
+
 
 	//checking whether active editor is java file, if so enable command
 	context.subscriptions.push(

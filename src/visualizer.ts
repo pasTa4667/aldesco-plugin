@@ -23,17 +23,14 @@ export default class Visualizer {
     private static _activePanel: VisualizerData = { panel: undefined, id: 0 };
 
     private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionPath: string;
     private _disposables: vscode.Disposable[] = [];
     private readonly _configuration = vscode.workspace.getConfiguration('aldesco-extension');
-    private static context: vscode.ExtensionContext;
 
     //message list to keep track of not acknowledged messages
     private _messageList: { type: string }[] = [];
 
     public static createOrShow(context: vscode.ExtensionContext, fileName?: string): Promise<Visualizer | undefined> {
         return new Promise<Visualizer>(async (resolve) => {
-            Visualizer.context = context;
             const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
             
             // If we already have a panel, show it.
@@ -53,7 +50,7 @@ export default class Visualizer {
         return new Promise<Visualizer | undefined>(async (res) => {
             const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
     
-            if (Visualizer._activePanel) {
+            if (Visualizer._activePanel.panel) {
                 if (!Visualizer._activePanel.group) {
                     Visualizer._activePanel.group = Visualizer._group++;
                     await this.sendMessageWithAck('VSC:SetGroup', { group: Visualizer._group, join: false});
@@ -70,7 +67,6 @@ export default class Visualizer {
     }
     
     private constructor(extensionPath: string, column: vscode.ViewColumn, group?: number, fileName?: string) {
-        this._extensionPath = extensionPath;
         const idGenerator = this.idGenerator();
         const id = idGenerator.next().value;
         const title = fileName ? fileName : 'Visualizer ' + id;
@@ -196,21 +192,15 @@ export default class Visualizer {
     }
 
     private _getHtmlForWebview() {
-        const manifest = require(join(this._extensionPath, 'visualizer', 'dist', 'asset-manifest.json'));
+        const cssPathOnDisk = vscode.Uri.file(join(__dirname, 'media', 'webview.css'));
+        const manifest = require(join(__dirname, 'visualizer', 'dist', 'asset-manifest.json'));
+
         const mainScript = manifest['files']['main.js'];
         const icon = manifest['files']['favicon.png'];
 
-        const scriptPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'visualizer', 'dist', mainScript));
-        const iconPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'visualizer', 'dist', icon));
-
-        //the path changes depending on dev or production mode
-        let cssPathOnDisk;
-        if(Visualizer.context.extensionMode === vscode.ExtensionMode.Production){
-            cssPathOnDisk = vscode.Uri.file(join(this._extensionPath, 'media', 'webview.css'));
-        }else {
-            cssPathOnDisk = vscode.Uri.file(join(this._extensionPath,'src', 'media', 'webview.css'));
-        }
-        
+        const scriptPathOnDisk = vscode.Uri.file(join(__dirname, 'visualizer', 'dist', mainScript));
+        const iconPathOnDisk = vscode.Uri.file(join(__dirname, 'visualizer', 'dist', icon));       
+    
         const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
         const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);
