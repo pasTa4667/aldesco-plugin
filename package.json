@@ -1,6 +1,7 @@
 {
   "name": "aldesco-extension",
   "displayName": "AlDeSCo Extension",
+  "publisher": "AlDeSCoUniUlm",
   "description": "",
   "repository": {
     "type": "git",
