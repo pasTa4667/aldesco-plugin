@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://gitlab.uni-ulm.de/se/aldesco/vscode-extension.git"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.78.0"
   },
@@ -181,7 +181,7 @@
           "command": "aldesco-extension.addInputResource",
           "when": "editorIsJava"
         },
-        { 
+        {
           "command": "aldesco-extension.testing",
           "when": "false"
         }
