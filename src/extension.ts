@@ -96,7 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.duplicateVis', async () => {
 			if (visualizer) {
-				visualizer.duplicateActive(context.extensionPath, fileBaseName);
+				visualizer.duplicateActive(context, fileBaseName);
 			} else {
 				vscode.window.showInformationMessage('No Visualizer Active to Duplicate');
 			}

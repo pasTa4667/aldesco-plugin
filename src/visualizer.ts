@@ -14,6 +14,8 @@ export default class Visualizer {
 
     private static currentVisualizer: Visualizer | undefined;
 
+    private context: vscode.ExtensionContext;
+
     private static readonly viewType = 'visualizer';
     private static _panels: VisualizerData[] = [];
     private static _idStart = 1;
@@ -39,14 +41,14 @@ export default class Visualizer {
                 Visualizer.currentVisualizer._panel.reveal(column);
                 resolve(Visualizer.currentVisualizer);
             } else {
-                Visualizer.currentVisualizer = new Visualizer(context.extensionPath, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
+                Visualizer.currentVisualizer = new Visualizer(context, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
                 await Visualizer.currentVisualizer.wasMessageReceived('Started');
                 resolve(Visualizer.currentVisualizer);
             }
         });
     }
 
-    public duplicateActive(extensionPath: string, title: string): Promise<Visualizer | undefined> {
+    public duplicateActive(context: vscode.ExtensionContext, title: string): Promise<Visualizer | undefined> {
         return new Promise<Visualizer | undefined>(async (res) => {
             const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
     
@@ -56,7 +58,7 @@ export default class Visualizer {
                     await this.sendMessageWithAck('VSC:SetGroup', { group: Visualizer._group, join: false});
                 }
 
-                Visualizer.currentVisualizer = new Visualizer(extensionPath, column || vscode.ViewColumn.One, Visualizer._group, title);
+                Visualizer.currentVisualizer = new Visualizer(context, column || vscode.ViewColumn.One, Visualizer._group, title);
                 await Visualizer.currentVisualizer.wasMessageReceived('Started');
                 await Visualizer.currentVisualizer.sendMessageWithAck('VSC:SetGroup', { group: Visualizer._group, join: true });
                 
@@ -66,7 +68,8 @@ export default class Visualizer {
         });
     }
     
-    private constructor(extensionPath: string, column: vscode.ViewColumn, group?: number, fileName?: string) {
+    private constructor(context: vscode.ExtensionContext, column: vscode.ViewColumn, group?: number, fileName?: string) {
+        this.context = context;
         const idGenerator = this.idGenerator();
         const id = idGenerator.next().value;
         const title = fileName ? fileName : 'Visualizer ' + id;
@@ -192,14 +195,17 @@ export default class Visualizer {
     }
 
     private _getHtmlForWebview() {
-        const cssPathOnDisk = vscode.Uri.file(join(__dirname, 'media', 'webview.css'));
-        const manifest = require(join(__dirname, 'visualizer', 'dist', 'asset-manifest.json'));
+        // if we are in dev mode, its a different path as the production mode
+        const isDevMode = this.context.extensionMode === vscode.ExtensionMode.Development ? true : false;
+
+        const cssPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, isDevMode ? 'src' : '', 'media', 'webview.css'));
+        const manifest = require(join(this.context.extensionPath, 'visualizer', 'dist', 'asset-manifest.json'));
 
         const mainScript = manifest['files']['main.js'];
         const icon = manifest['files']['favicon.png'];
 
-        const scriptPathOnDisk = vscode.Uri.file(join(__dirname, 'visualizer', 'dist', mainScript));
-        const iconPathOnDisk = vscode.Uri.file(join(__dirname, 'visualizer', 'dist', icon));       
+        const scriptPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, 'visualizer', 'dist', mainScript));
+        const iconPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, 'visualizer', 'dist', icon));       
     
         const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
