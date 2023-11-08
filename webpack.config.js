@@ -53,7 +53,6 @@ const config = {
         new CopyPlugin({
             patterns: [
                 { from: path.resolve(__dirname, 'visualizer', 'dist'), to: 'visualizer/dist' },
-                { from: path.resolve(__dirname, 'prototype'), to: 'prototype' },
                 { from: path.resolve(__dirname, 'src', 'media', 'webview.css'), to: 'media/webview.css' }
             ],
             options: {

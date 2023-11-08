@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { join, basename, extname } from 'path';
-import { promises, readdirSync, readFileSync, existsSync } from 'fs';
+import { promises, readdirSync, readFileSync, existsSync, readFile } from 'fs';
 import { platform } from 'os';
 
 /*
@@ -158,5 +158,57 @@ export function openFile(filePath: string, viewColumn?: vscode.ViewColumn){
         vscode.window.showTextDocument(document, viewColumn ? viewColumn : vscode.ViewColumn.One);
     }, (error) => {
         vscode.window.showErrorMessage(`Unable to open file: ${error.message}`);
+    });
+}
+
+/**
+ * Reads the content of a file and returns the Data
+ */
+export function readFileContent(src: string) {
+    return new Promise<string>((resolve, reject) =>
+        readFile(src, 'utf8', (err, data) => (err ? reject(err) : resolve(data))),
+    );
+}
+
+/**
+ * Retrieves the manifest and css for the webview.
+ */
+export function retrieveVisualizerData(context: vscode.ExtensionContext){
+    return new Promise<any>(async (resolve, reject) => {
+        // Determine whether you are in development or production mode.
+        const isDevMode = context.extensionMode === vscode.ExtensionMode.Development ? true : false;
+
+        const extensionPath = context.extensionPath;
+
+        const assetManifestPath = join(extensionPath, isDevMode ? '' : 'out', 'visualizer', 'dist', 'asset-manifest.json');
+
+        let cssPathOnDisk: vscode.Uri;
+        let scriptPathOnDisk: vscode.Uri;
+        let iconPathOnDisk: vscode.Uri;
+
+        const errorMessage = "Error while retrieving Visualizer Data. Visualizer will not function properly";
+
+        await readFileContent(assetManifestPath).then((data) => {
+            const manifest = JSON.parse(data);
+            const mainScript = manifest['files']['main.js'];
+            const icon = manifest['files']['favicon.png'];
+
+            try {
+
+                cssPathOnDisk = vscode.Uri.file(join(extensionPath, isDevMode ? 'src' : 'out', 'media', 'webview.css'));
+                scriptPathOnDisk = vscode.Uri.file(join(extensionPath, isDevMode ? '' : 'out', 'visualizer', 'dist', mainScript));
+                iconPathOnDisk = vscode.Uri.file(join(extensionPath, isDevMode ? '' : 'out', 'visualizer', 'dist', icon));
+
+                resolve({ cssPathOnDisk, scriptPathOnDisk, iconPathOnDisk });
+
+            } catch (error) {
+                reject(errorMessage);
+            }
+
+        }).catch((error) => {
+            reject(errorMessage);
+        });
+
+        reject(errorMessage);
     });
 }

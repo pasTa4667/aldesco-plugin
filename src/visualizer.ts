@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { join } from 'path';
+import { existsSync, readFile } from 'fs';
+import { readFileContent } from './prototype-commands/fileUtils';
 
 interface VisualizerData {
     panel?: vscode.WebviewPanel;
@@ -14,7 +16,7 @@ export default class Visualizer {
 
     private static currentVisualizer: Visualizer | undefined;
 
-    private context: vscode.ExtensionContext;
+    private visualizerData: any;
 
     private static readonly viewType = 'visualizer';
     private static _panels: VisualizerData[] = [];
@@ -31,7 +33,7 @@ export default class Visualizer {
     //message list to keep track of not acknowledged messages
     private _messageList: { type: string }[] = [];
 
-    public static createOrShow(context: vscode.ExtensionContext, fileName?: string): Promise<Visualizer | undefined> {
+    public static createOrShow(visualizerData: any, fileName?: string): Promise<Visualizer | undefined> {
         return new Promise<Visualizer>(async (resolve) => {
             const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
             
@@ -41,14 +43,14 @@ export default class Visualizer {
                 Visualizer.currentVisualizer._panel.reveal(column);
                 resolve(Visualizer.currentVisualizer);
             } else {
-                Visualizer.currentVisualizer = new Visualizer(context, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
+                Visualizer.currentVisualizer = new Visualizer(visualizerData, column || vscode.ViewColumn.One, undefined, fileName ? fileName : '');         
                 await Visualizer.currentVisualizer.wasMessageReceived('Started');
                 resolve(Visualizer.currentVisualizer);
             }
         });
     }
 
-    public duplicateActive(context: vscode.ExtensionContext, title: string): Promise<Visualizer | undefined> {
+    public duplicateActive(visualizerData: any, title: string): Promise<Visualizer | undefined> {
         return new Promise<Visualizer | undefined>(async (res) => {
             const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
     
@@ -58,7 +60,7 @@ export default class Visualizer {
                     await this.sendMessageWithAck('VSC:SetGroup', { group: Visualizer._group, join: false});
                 }
 
-                Visualizer.currentVisualizer = new Visualizer(context, column || vscode.ViewColumn.One, Visualizer._group, title);
+                Visualizer.currentVisualizer = new Visualizer(visualizerData, column || vscode.ViewColumn.One, Visualizer._group, title);
                 await Visualizer.currentVisualizer.wasMessageReceived('Started');
                 await Visualizer.currentVisualizer.sendMessageWithAck('VSC:SetGroup', { group: Visualizer._group, join: true });
                 
@@ -68,8 +70,8 @@ export default class Visualizer {
         });
     }
     
-    private constructor(context: vscode.ExtensionContext, column: vscode.ViewColumn, group?: number, fileName?: string) {
-        this.context = context;
+    private constructor(visualizerData: any, column: vscode.ViewColumn, group?: number, fileName?: string) {
+        this.visualizerData = visualizerData;
         const idGenerator = this.idGenerator();
         const id = idGenerator.next().value;
         const title = fileName ? fileName : 'Visualizer ' + id;
@@ -192,24 +194,14 @@ export default class Visualizer {
         while (true) {
             yield Visualizer._idStart++;
         }
-    }
+    }  
 
     private _getHtmlForWebview() {
-        // if we are in dev mode, its a different path as the production mode
-        const isDevMode = this.context.extensionMode === vscode.ExtensionMode.Development ? true : false;
+        const { cssPathOnDisk, scriptPathOnDisk, iconPathOnDisk } = this.visualizerData;
 
-        const cssPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, isDevMode ? 'src' : '', 'media', 'webview.css'));
-        const manifest = require(join(this.context.extensionPath, 'visualizer', 'dist', 'asset-manifest.json'));
-
-        const mainScript = manifest['files']['main.js'];
-        const icon = manifest['files']['favicon.png'];
-
-        const scriptPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, 'visualizer', 'dist', mainScript));
-        const iconPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, 'visualizer', 'dist', icon));       
-    
-        const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
-        const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
-        const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);
+        const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk as vscode.Uri);
+        const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk as vscode.Uri);
+        const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk as vscode.Uri);
 
         const enableDarkMode = this._configuration.get('visualizer.enableDarkMode');
         const colorScheme = enableDarkMode ? 'dark-mode' : 'light-mode';
@@ -236,4 +228,46 @@ export default class Visualizer {
 		</html>`;
     }
 
+    // private _getHtmlForWebviewOld() {
+    //     // if we are in dev mode, its a different path as the production mode
+    //     const isDevMode = this.context.extensionMode === vscode.ExtensionMode.Development ? true : false;
+    //     vscode.window.showInformationMessage("extension Mode: " + isDevMode, "path: " + this.context.extensionPath);
+
+    //     const cssPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, isDevMode ? 'src' : 'out', 'media', 'webview.css'));
+    //     const manifest = require(join(this.context.extensionPath, isDevMode ? '' : 'out', 'visualizer', 'dist', 'asset-manifest.json'));
+
+    //     const mainScript = manifest['files']['main.js'];
+    //     const icon = manifest['files']['favicon.png'];
+
+    //     const scriptPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, isDevMode ? '' : 'out', 'visualizer', 'dist', mainScript));
+    //     const iconPathOnDisk = vscode.Uri.file(join(this.context.extensionPath, isDevMode ? '' : 'out', 'visualizer', 'dist', icon));       
+    
+    //     const cssUri = this._panel.webview.asWebviewUri(cssPathOnDisk);
+    //     const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
+    //     const iconUri = this._panel.webview.asWebviewUri(iconPathOnDisk);
+
+    //     const enableDarkMode = this._configuration.get('visualizer.enableDarkMode');
+    //     const colorScheme = enableDarkMode ? 'dark-mode' : 'light-mode';
+
+    //     return `<!doctype html>
+	// 	<html>
+	// 	<head>
+	// 	<meta charset="utf-8"><title>AST Prototype Visualizer</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="${iconUri}">
+	// 	<link rel="stylesheet" href=${cssUri}>
+	// 	</head>
+	// 	<body class=${colorScheme}>
+	// 	<script defer="defer" src="${scriptUri}"></script>
+	// 	<script> 
+	// 		(function() {
+	// 			const vscode = acquireVsCodeApi();	
+	// 			window.addEventListener("message", (event) => {
+    //                 const type = event.data.type;
+    //                 //send message from vis to our extension
+	// 				vscode.postMessage(type);
+	// 			});
+	// 		}())
+	// 	</script>
+	// 	</body>
+	// 	</html>`;
+    // }
 }

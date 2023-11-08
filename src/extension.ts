@@ -7,10 +7,11 @@ import * as statusBarItem from './matchloop/statusBarItem';
 import { startMatchLoopFromTest, disposeMatchLoopFromTest } from './matchloop/matchLoopFromTest';
 import { initiateTreeView } from './treeView/treeViewProvider';
 import { addMatchInputFile, clearMatchInputFolder, disposeMatchLoopFromPattern, startMatchLoopFromPattern } from './matchloop/matchLoopFromPattern';
+import { retrieveVisualizerData } from './prototype-commands/fileUtils';
 
 // This method is called when your extension is activated
 // Your extension is activated once vscode has finished starting up
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 
 	// This line of code will only be executed once when your extension is activated
 	console.log('extension "aldesco-extension" is now active!');
@@ -30,6 +31,15 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	//current chain for prototype matching
 	let chain = configuration.get('prototype.chainLocation') as string;
+
+	//we need to retrieve the visualizer data here and then pass them on to the visualizer
+	let visualizerData: any;
+	await retrieveVisualizerData(context)
+		.then((data) => {
+			visualizerData = data;
+		}).catch((error) => {
+			vscode.window.showErrorMessage(error);
+		});
 	
 	// The commandId parameter must match the command field in package.json
 	// The commands have been defined in the package.json file
@@ -37,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
 	//Opens Visualizer without log File
 	context.subscriptions.push(
 		vscode.commands.registerCommand('aldesco-extension.visualizer', async () => {
-			visualizer = await Visualizer.createOrShow(context);
+			visualizer = await Visualizer.createOrShow(visualizerData);
 			updateVisualizerContext(visualizer);
 		})
 	);
@@ -48,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 			fileBaseName = basename(fileUri.path);
 			fileContent = readFileSync(fileUri.fsPath, 'utf8').toString();
 			
-			visualizer = await Visualizer.createOrShow(context, fileBaseName);
+			visualizer = await Visualizer.createOrShow(visualizerData, fileBaseName);
 
 			if (visualizer && fileBaseName && fileContent) {
 				if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
@@ -76,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}).then(fileUris => {
 					if (fileUris && fileUris[0]) {
 						const fileUri = fileUris[0];
-						readFileOpenVis(fileUri, context).then((vis) => {
+						readFileOpenVis(fileUri, visualizerData).then((vis) => {
 							visualizer = vis;
 							updateVisualizerContext(visualizer);
 						});
@@ -84,7 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
 				});
 			} else {
 				const fileUri = activeEditor.document.uri;
-				readFileOpenVis(fileUri, context).then((vis) => {
+				readFileOpenVis(fileUri, visualizerData).then((vis) => {
 					visualizer = vis;
 					updateVisualizerContext(visualizer);
 				});
@@ -158,7 +168,7 @@ export function activate(context: vscode.ExtensionContext) {
 					if (tree !== '/' && tree !== '/ASTView' && tree !== '/patternView') {
 						tree = '/';
 					}
-					readFileOpenVis(vscode.Uri.file(latestFilePath), context, tree).then((vis) => {
+					readFileOpenVis(vscode.Uri.file(latestFilePath), visualizerData, tree).then((vis) => {
 						visualizer = vis;
 						updateVisualizerContext(visualizer);
 					});
@@ -456,11 +466,11 @@ function updateIsMatchViewActive(active: boolean) {
 }
 
 //other functions
-async function readFileOpenVis(fileUri: vscode.Uri, context: vscode.ExtensionContext, tree?: string): Promise<Visualizer | undefined> {
+async function readFileOpenVis(fileUri: vscode.Uri, visualizerData: any, tree?: string): Promise<Visualizer | undefined> {
 	const content = await vscode.workspace.fs.readFile(fileUri);
 	const jsonContent = content.toString();
 	const fileBaseName = basename(fileUri.fsPath);
-	const visualizer = await Visualizer.createOrShow(context, fileBaseName);
+	const visualizer = await Visualizer.createOrShow(visualizerData, fileBaseName);
 	
 	if(visualizer){
 		await visualizer.sendMessageWithAck('VSC:OpenFile', { name: fileBaseName, content: jsonContent, tree: tree ? tree : '/' });
