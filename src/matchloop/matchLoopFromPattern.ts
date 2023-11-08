@@ -1,0 +1,175 @@
+import * as vscode from 'vscode';
+import * as statusBarItem from './statusBarItem';
+import * as fileUtils from "../prototype-commands/fileUtils";
+import { join, basename } from 'path';
+import { copyFile, readdirSync, statSync, unlinkSync } from 'fs';
+import Prototype from '../prototype-commands/ptCommands'; 
+import { ResultContainer, analyzeMatchResults } from "../treeView/treeViewProvider";
+import path = require('path');
+
+
+let matchLoopDisposable: vscode.Disposable | null;
+let toMatchFolderPath: string;
+
+const matchLoopResultFileName = 'match-loop-results.json';
+
+export async function startMatchLoopFromPattern(patternFilePath: string, extensionPath: string) {
+    const wsFolders = vscode.workspace.workspaceFolders;
+
+    if (!wsFolders) {
+        vscode.window.showErrorMessage('Workspace does not exist');
+        return;
+    }
+
+    //create a folder with input files in it 
+    if(!toMatchFolderPath){
+        await createOrGetInputMatchFolder(extensionPath);
+    }
+    
+    statusBarItem.initialize();
+    let isProcessing = false;
+    let hasCompiled = true;
+    let compiledPatternPath: string;
+
+    //path to the match-loop-result.json which will be generated
+    const matchResultFilePath = vscode.Uri.file(await getPathToMatchResultFile(extensionPath));
+
+    vscode.window.showInformationMessage('Match Loop Started with ' + basename(patternFilePath));
+
+    matchLoopDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
+        if (event.document.uri.fsPath === patternFilePath && !isProcessing) {
+            isProcessing = true;
+            hasCompiled = true;
+
+            setTimeout(async () => {
+
+                //second timeout so we dont execute it muliple times
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 2000);
+                
+                //need to safe document or else it wont compile correct file
+                await event.document.save();
+
+                //compile pattern file and get path
+                await Prototype.compileSingleFile(extensionPath, patternFilePath).then((compiledPath) => {
+                    compiledPatternPath = compiledPath;
+                }).catch((error) => {
+                    hasCompiled = false;
+                });
+
+                //starting the matching process if the file compiles
+                if(hasCompiled){
+                    statusBarItem.setLoadingState();
+                    //match folder with the open pattern
+                    await Prototype.matchFolderWithChainML(extensionPath, compiledPatternPath, toMatchFolderPath)
+                        .then(async (v) => {
+                            console.log("match success");
+                            //generate the match tree view, to analyze results
+                            const root = await vscode.commands.executeCommand('aldesco-extension.openMatchesAsTree', matchResultFilePath);
+                            //add analyzed results to status bar
+                            addResultsToStatusBarItem(analyzeMatchResults(root as ResultContainer));
+                        })
+                        .catch((error) => {
+                            console.log("match error: ", error);
+                            statusBarItem.setFailedState();
+                        });
+                }
+
+            }, 1500);
+        }
+    });
+}
+
+export async function addMatchInputFile(inputFilePath: string, extensionPath: string){
+    //creating the folder holding the files to be matched
+    if(!toMatchFolderPath){
+        await createOrGetInputMatchFolder(extensionPath);
+    }
+
+    const fileName = basename(inputFilePath);
+    const destinationPath = join(toMatchFolderPath, fileName);
+
+    //copy the file
+    copyFile(inputFilePath, destinationPath, (err) => {
+        if (err) {
+            vscode.window.showWarningMessage('Adding input file failed: ' + err);
+        } else {
+            vscode.window.showInformationMessage('Added input file.');
+        }
+    });
+}
+
+export async function clearMatchInputFolder(extensionPath: string){
+    if (!toMatchFolderPath) {
+        await createOrGetInputMatchFolder(extensionPath);
+    }
+
+    try {
+        // Read the directory contents
+        const files = readdirSync(toMatchFolderPath);
+
+        // Loop through the files and remove them
+        files.forEach((file) => {
+            const filePath = path.join(toMatchFolderPath, file);
+
+            if (statSync(filePath).isFile()) {
+                unlinkSync(filePath); // Remove the file
+            }
+        });
+
+        vscode.window.showInformationMessage('Match Input Folder cleared.');
+    } catch (err) {
+        vscode.window.showErrorMessage('Match Input Folder could not be cleared: ' + err);
+    }
+
+}
+
+export function disposeMatchLoopFromPattern(){
+    if(matchLoopDisposable) {
+        matchLoopDisposable.dispose();
+        statusBarItem.dispose();
+    }
+}
+
+function addResultsToStatusBarItem(results?: Map<string, number>){
+    if(!results || results.size === 0){
+        statusBarItem.setFailedState('No Match');
+        return;
+    }
+
+    statusBarItem.setMatchedState(`${results.size} File(s) Matched`);
+
+    let toolTipText: string[] = [];
+    
+    results.forEach((matches, fileName) => {
+        toolTipText.push(`<tr><td>${fileName}</td><td>&emsp;-&emsp;</td><td>${matches} Match(es)</td></tr>`);
+    });
+    //importend: no tabs or linebreaks in the html, or it wont work
+    const html = `<table>${toolTipText.join('')}</table>`;
+    const md = new vscode.MarkdownString(html);
+    md.isTrusted = true;
+    md.supportHtml = true;
+    statusBarItem.setToolTip(md);
+}
+
+async function getPathToMatchResultFile(extensionPath: string){
+    const resultPath  = await fileUtils.createOrGetOutputFolder(extensionPath);
+
+    return join(resultPath, matchLoopResultFileName);
+}
+
+async function createOrGetInputMatchFolder(extensionPath: string) {
+    const outputPath = await fileUtils.createOrGetOutputFolder(extensionPath);
+
+    await fileUtils.createOrGetFolder(outputPath, 'MatchInputs')
+        .then((path) => {
+            toMatchFolderPath = path;
+        }).catch((err) => {
+            vscode.window.showWarningMessage('Match Input Folder couldnt be generated: ', err);
+            return;
+        });
+}
+
+
+

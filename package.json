@@ -1,8 +1,13 @@
 {
   "name": "aldesco-extension",
   "displayName": "AlDeSCo Extension",
+  "publisher": "AlDeSCoUniUlm",
   "description": "",
-  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.uni-ulm.de/se/aldesco/vscode-extension.git"
+  },
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.78.0"
   },
@@ -14,105 +19,171 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "type": "tree",
+          "id": "aldesco-extension.matchTreeView",
+          "name": "Matches",
+          "when": "isMatchViewActive"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "aldesco-extension.visualizer",
         "title": "Open Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.rightClickLogFile",
         "title": "Open in Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openLogFileInVis",
         "title": "Open Log File in Visualizer",
-        "category": "Visualizer"
-      },
-      {
-        "command": "aldesco-extension.connectToVisLH",
-        "title": "Connect to localhost (debugging)",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.duplicateVis",
         "title": "Duplicate",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
-        "command": "aldesco-extension.sendMessage",
-        "title": "Send Message",
-        "category": "Visualizer"
+        "command": "aldesco-extension.testing",
+        "title": "Testing",
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openAST",
         "title": "Open AST",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openPattern",
         "title": "Open Pattern",
-        "category": "Visualizer"
-      },
-      {
-        "command": "aldesco-extension.startPrototype",
-        "title": "Start Prototype",
-        "category": "Visualizer"
-      },
-      {
-        "command": "aldesco-extension.selectOutputLocation",
-        "title": "Select Output Location",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.openMostRecentLogFile",
         "title": "Open Most Recent Log File in Visualizer",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
       },
       {
         "command": "aldesco-extension.visualizeSpoonAST",
         "title": "Visualize Spoon AST",
-        "category": "Visualizer"
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.setChain",
+        "title": "Set as Chain",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.compileAllAndSetChain",
+        "title": "Compile all",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.compileSingleAndSetChain",
+        "title": "Compile single",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.currentChain",
+        "title": "Show current Chain",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.folderMatching",
+        "title": "Match Folder with Chain",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.startMatchLoopFromTest",
+        "title": "Start Match Loop From Test (Experimental)",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.stopMatchLoop",
+        "title": "Stop Match Loop",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.openMatchesAsTree",
+        "title": "Open Match Tree",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.startMatchLoopFromPattern",
+        "title": "Start Match Loop From Pattern",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.addInputResource",
+        "title": "Add Match Loop Input",
+        "category": "AlDeSCo"
+      },
+      {
+        "command": "aldesco-extension.clearMatchInputFolder",
+        "title": "Clear Match Input Folder",
+        "category": "AlDeSCo"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "aldesco-extension.openAST",
-          "title": "Open AST",
-          "category": "Visualizer",
           "when": "false"
         },
         {
           "command": "aldesco-extension.openPattern",
-          "title": "Open Pattern",
-          "category": "Visualizer",
           "when": "false"
         },
         {
           "command": "aldesco-extension.rightClickLogFile",
-          "title": "Open in Visualizer",
-          "category": "Visualizer",
           "when": "false"
         },
         {
           "command": "aldesco-extension.duplicateVis",
-          "title": "Duplicate",
-          "category": "Visualizer",
-          "when": "reactPanel"
-        },
-        {
-          "command": "aldesco-extension.selectOutputLocation",
-          "title": "Select Output Location",
-          "category": "Visualizer",
-          "when": "false"
+          "when": "visualizer"
         },
         {
           "command": "aldesco-extension.visualizeSpoonAST",
-          "title": "Visualize Spoon AST",
-          "category": "Visualizer",
-          "when": "isEditorJava"
+          "when": "editorIsJava"
+        },
+        {
+          "command": "aldesco-extension.compileAllAndSetChain",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.compileSingleAndSetChain",
+          "when": "editorHasPattern"
+        },
+        {
+          "command": "aldesco-extension.startMatchLoopFromTest",
+          "when": "!isMatchLoopActive"
+        },
+        {
+          "command": "aldesco-extension.stopMatchLoop",
+          "when": "isMatchLoopActive"
+        },
+        {
+          "command": "aldesco-extension.openMatchesAsTree",
+          "when": "false"
+        },
+        {
+          "command": "aldesco-extension.startMatchLoopFromPattern",
+          "when": "editorHasPattern && !isMatchLoopActive"
+        },
+        {
+          "command": "aldesco-extension.addInputResource",
+          "when": "editorIsJava"
+        },
+        {
+          "command": "aldesco-extension.testing",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -120,6 +191,31 @@
           "submenu": "aldesco-extension.rightClickLogFile",
           "when": "resourceFilename =~ /\\-vis/",
           "group": "navigation"
+        },
+        {
+          "submenu": "aldesco-extension.setChain",
+          "when": "resourceFilename =~ /\\.java/",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.setChain",
+          "when": "resourceFilename =~ /\\.class/",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.folderMatching",
+          "when": "resourceScheme == file && resourceExtname == ''",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.openMatchesAsTree",
+          "when": " resourceFilename =~ /\\.json/",
+          "group": "navigation"
+        },
+        {
+          "command": "aldesco-extension.addInputResource",
+          "when": "resourceFilename =~ /\\.java/",
+          "group": "explorer"
         }
       ],
       "editor/context": [
@@ -131,18 +227,29 @@
       "aldesco-extension.rightClickLogFile": [
         {
           "command": "aldesco-extension.openAST",
-          "category": "Visualizer",
           "group": "aldesco-extension.rightClickLogFile@1"
         },
         {
           "command": "aldesco-extension.openPattern",
-          "category": "Visualizer",
           "group": "aldesco-extension.rightClickLogFile@2"
         },
         {
           "command": "aldesco-extension.rightClickLogFile",
-          "category": "Visualizer",
           "group": "aldesco-extension.rightClickLogFile@3"
+        }
+      ],
+      "aldesco-extension.setChain": [
+        {
+          "command": "aldesco-extension.compileSingleAndSetChain",
+          "group": "aldesco-extension.setChain@1"
+        },
+        {
+          "command": "aldesco-extension.compileAllAndSetChain",
+          "group": "aldesco-extension.setChain@2"
+        },
+        {
+          "command": "aldesco-extension.setChain",
+          "group": "aldesco-extension.setChain@3"
         }
       ]
     },
@@ -150,6 +257,10 @@
       {
         "id": "aldesco-extension.rightClickLogFile",
         "label": "Open in Visualizer"
+      },
+      {
+        "id": "aldesco-extension.setChain",
+        "label": "Set as Chain"
       }
     ],
     "configuration": {
@@ -160,40 +271,28 @@
           "default": "false",
           "description": "Enables Dark Mode in the Visualizer Webview."
         },
-        "aldesco-extension.prototype.outputLocation": {
+        "aldesco-extension.prototype.sourceSetBuildLocation": {
           "type": "string",
-          "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of Prototype Output file."
-        },
-        "aldesco-extension.prototype.inputLocation": {
-          "type": "string",
-          "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of Prototype Input Directory."
+          "default": "",
+          "description": "Set Location the Source Set within the Projects build Folder (Optional)."
         },
         "aldesco-extension.prototype.chainLocation": {
           "type": "string",
           "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of Prototype Chain."
-        },
-        "aldesco-extension.prototype.aldescoProjectDirectory": {
-          "type": "string",
-          "format": "uri",
-          "default": "C:\\Users",
-          "description": "Set Location of AlDeSCo Project Directory."
+          "default": "",
+          "description": "Set Location of Chain."
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "vscode:prepublish": "npm run package",
+    "webpack": "webpack --mode development",
+    "webpack-dev": "webpack --mode development --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "build": "webpack --mode production",
+    "test-compile": "tsc -p ./",
+    "watch": "tsc -w"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -204,9 +303,20 @@
     "@typescript-eslint/eslint-plugin": "^5.53.0",
     "@typescript-eslint/parser": "^5.53.0",
     "@vscode/test-electron": "^2.2.3",
+    "copy-webpack-plugin": "^11.0.0",
     "eslint": "^8.34.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "typescript": "^4.9.5"
-  }
+    "ts-loader": "^9.5.0",
+    "typescript": "^4.9.5",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "date-fns": "^2.30.0"
+  },
+  "files": [
+    "out/**",
+    "node_modules/**"
+  ]
 }
